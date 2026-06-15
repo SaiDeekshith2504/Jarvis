@@ -1,12 +1,15 @@
-# Jarvis Day 1 - Python Dependencies
+# Jarvis Dependencies
 # Install with: pip install -r requirements.txt
 
-# Core (standard library only for Day 1 - no pip install needed)
-# Listed here for future days
+# ── Day 2 (voice + utilities) ─────────────────────────────────────────────────
+pyttsx3            # offline text-to-speech (no internet needed)
+SpeechRecognition  # voice input via microphone
+pyaudio            # microphone driver (required by SpeechRecognition)
+                   # Windows: pip install pyaudio
+                   # If pyaudio fails: pip install pipwin && pipwin install pyaudio
 
-# --- Day 2+ (uncomment when needed) ---
-# pyttsx3          # offline text-to-speech
-# SpeechRecognition  # voice input
-# pyaudio          # microphone access (required by SpeechRecognition)
-# requests         # web/API calls
-# openai           # AI responses (GPT)
+# ── Day 3+ (uncomment when needed) ────────────────────────────────────────────
+# requests           # HTTP calls / REST APIs
+# openai             # GPT integration
+# python-dotenv      # .env file support for API keys
+# psutil             # detailed system stats (CPU, RAM, disk)

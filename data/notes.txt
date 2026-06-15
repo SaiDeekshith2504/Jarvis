@@ -1,0 +1,3 @@
+# Notes saved by Jarvis (note command)
+# Each entry is timestamped automatically.
+[2026-06-15 23:03]  Test note from pytest
