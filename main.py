@@ -1,7 +1,7 @@
 """
 main.py
 -------
-Jarvis — Day 2  (v0.2)
+Jarvis — Day 3  (v0.3)
 Entry point. Run this file to start the assistant.
 
 Usage:

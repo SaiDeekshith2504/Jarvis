@@ -3,11 +3,8 @@ core/assistant.py
 -----------------
 The main loop of Jarvis. Handles startup, input, routing, and shutdown.
 
-Day 2 changes:
-  • Imports voice module and wires speak() / listen() into the loop.
-  • Supports VOICE_ENABLED flag from config.py.
-  • 'voice' command toggles voice mode at runtime.
-  • handle_command() now receives speak_fn so responses are spoken.
+Day 2: Imports voice module, wires speak()/listen(), supports VOICE_ENABLED flag.
+Day 3: Adds startup_capabilities() teaser; improved exit message.
 """
 
 from __future__ import annotations
@@ -15,11 +12,11 @@ from __future__ import annotations
 import config
 from config import VOICE_ENABLED
 
-from core.greeting import greet_user
-from core.commands import handle_command
-from core.utils    import display_banner, get_input
+from core.greeting  import greet_user
+from core.commands  import handle_command
+from core.utils     import display_banner, get_input, startup_capabilities
 
-# ── Import voice module (graceful if unavailable) ───────────────────────────
+# ── Import voice module (graceful if unavailable) ────────────────────────────
 try:
     from core.voice import speak, listen, is_voice_available
     _voice_module_ok = True
@@ -44,9 +41,9 @@ def _print_voice_status(enabled: bool) -> None:
 
 
 def _startup_hints(voice_mode: bool) -> None:
-    print("  Type a command below. Type 'help' to see what I can do.")
+    print("  Type a command below — or just ask a question naturally.")
     if voice_mode:
-        print("  Voice mode is ACTIVE — just speak, or type normally.\n")
+        print("  Voice mode is ACTIVE — speak now, or type normally.\n")
     else:
         print("  Voice mode is OFF — type 'voice' to enable it.\n")
 
@@ -56,24 +53,21 @@ def _startup_hints(voice_mode: bool) -> None:
 def run_jarvis() -> None:
     """Entry point. Starts Jarvis and runs the main command loop."""
 
-    # Decide initial voice state from config
     voice_mode: bool = VOICE_ENABLED and is_voice_available()
 
-    # If config wanted voice but it's unavailable, warn the user
     if VOICE_ENABLED and not is_voice_available():
         print(
-            "\n  [Jarvis] ⚠️  Voice mode requested but audio libraries are "
-            "missing.\n"
+            "\n  [Jarvis] ⚠️  Voice mode requested but audio libraries are missing.\n"
             "           Running in text-only mode.\n"
             "           Install pyttsx3 + SpeechRecognition + pyaudio to enable voice.\n"
         )
 
-    # Choose speak function based on current voice_mode
     speak_fn = speak if voice_mode else None
 
     # ── Startup ──────────────────────────────────────────────────────────────
     display_banner()
     greet_user(speak_fn=speak_fn)
+    startup_capabilities()
     _startup_hints(voice_mode)
 
     # ── Command Loop ─────────────────────────────────────────────────────────
@@ -81,13 +75,13 @@ def run_jarvis() -> None:
         user_input = get_input(voice_mode=voice_mode, listen_fn=listen)
 
         if not user_input:
-            continue  # Ignore empty input
+            continue
 
         lower = user_input.lower().strip()
 
         # ── Exit ─────────────────────────────────────────────────────────────
-        if lower in ("exit", "quit", "bye", "goodbye"):
-            msg = "Goodbye! See you next time."
+        if lower in ("exit", "quit", "bye", "goodbye", "stop"):
+            msg = "Thanks for using Jarvis. See you next time! 👋"
             if speak_fn:
                 speak_fn(msg)
             else:
@@ -99,7 +93,6 @@ def run_jarvis() -> None:
             if not is_voice_available():
                 speak("Voice mode unavailable — audio libraries are not installed.")
                 continue
-
             voice_mode = not voice_mode
             speak_fn   = speak if voice_mode else None
             _print_voice_status(voice_mode)

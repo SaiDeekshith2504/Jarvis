@@ -8,8 +8,11 @@ pyaudio            # microphone driver (required by SpeechRecognition)
                    # Windows: pip install pyaudio
                    # If pyaudio fails: pip install pipwin && pipwin install pyaudio
 
-# ── Day 3+ (uncomment when needed) ────────────────────────────────────────────
-# requests           # HTTP calls / REST APIs
-# openai             # GPT integration
-# python-dotenv      # .env file support for API keys
-# psutil             # detailed system stats (CPU, RAM, disk)
+# ── Day 3 (automation + AI) ───────────────────────────────────────────────────
+psutil             # CPU / RAM / disk stats (sysinfo command)
+requests           # HTTP calls (future: REST APIs)
+python-dotenv      # load API keys from .env file
+
+# ── Day 3 AI (optional — install whichever you use) ───────────────────────────
+# google-generativeai   # Gemini API  →  pip install google-generativeai
+# openai                # OpenAI API  →  pip install openai

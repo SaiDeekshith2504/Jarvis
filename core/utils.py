@@ -2,9 +2,9 @@
 core/utils.py
 -------------
 Shared helpers used across Jarvis modules.
-Keeps presentation and input logic separate from business logic.
 
-Day 2: Banner updated to v0.2; get_input() now supports voice fallback.
+Day 2: Banner updated to v0.2; get_input() supports voice fallback.
+Day 3: Banner updated to v0.3; startup_capabilities() added.
 """
 
 import sys
@@ -22,7 +22,7 @@ JARVIS_BANNER = r"""
                V E R Y   I N T E L L I G E N T
                       S Y S T E M
 
-                     [ Day 2 — v0.2 ]
+                     [ Day 3 — v0.3 ]
   ══════════════════════════════════════════════════════
 """
 
@@ -32,14 +32,22 @@ def display_banner() -> None:
     print(JARVIS_BANNER)
 
 
+def startup_capabilities() -> None:
+    """Prints a concise 'what can I do?' teaser on startup."""
+    print("  ┌─ What can I do? ─────────────────────────────────────┐")
+    print("  │  📝  create note / write note / list notes           │")
+    print("  │  ✅  create todo / list todos / done todo            │")
+    print("  │  🔍  search <query>  •  ask <question> (AI)         │")
+    print("  │  💻  open <app>  •  sysinfo  •  status              │")
+    print("  │  😂  joke  •  💡 quote  •  help (full list)         │")
+    print("  └───────────────────────────────────────────────────────┘")
+    print()
+
+
 def get_text_input() -> str:
     """
     Reads a line of text from the user via the CLI.
     Handles keyboard interrupt (Ctrl+C) cleanly.
-
-    Returns:
-        str: The user's input, stripped of whitespace.
-             Returns empty string if nothing was typed.
     """
     try:
         raw = input("  You → ").strip()
@@ -58,17 +66,9 @@ def get_input(voice_mode: bool, listen_fn=None) -> str:
     In voice mode: calls listen_fn() (from core.voice); if that returns
     nothing, falls back to text input automatically.
     In text mode:  calls get_text_input() directly.
-
-    Args:
-        voice_mode: True → try mic first.
-        listen_fn:  Callable() → str | None  (core.voice.listen).
-
-    Returns:
-        str: Non-empty user input string (may be from mic or keyboard).
     """
     if voice_mode and listen_fn:
         result = listen_fn()
         if result:
             return result
-        # Mic failed — silently fall back to keyboard this round
     return get_text_input()

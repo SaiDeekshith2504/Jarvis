@@ -8,30 +8,47 @@ Edit this file to customise behaviour without touching core logic.
 import os
 
 # ─── Version ─────────────────────────────────────────────────────────────────
-VERSION = "0.2"
-DAY     = "Day 2"
+VERSION = "0.3"
+DAY     = "Day 3"
 
 # ─── Voice Mode ──────────────────────────────────────────────────────────────
 # Set to True to enable microphone input + TTS output.
 # Set to False for pure text mode (no audio dependencies needed).
 VOICE_ENABLED = True
 
-# ─── Notes ───────────────────────────────────────────────────────────────────
-# File where 'note' command saves entries.
-NOTES_FILE = os.path.join(os.path.dirname(__file__), "data", "notes.txt")
+# ─── Paths ───────────────────────────────────────────────────────────────────
+_BASE = os.path.dirname(__file__)
+
+# Day 2 legacy: flat notes file (kept for backwards compatibility)
+NOTES_FILE = os.path.join(_BASE, "data", "notes.txt")
+
+# Day 3: individual note files live here (one .txt per note title)
+NOTES_DIR = os.path.join(_BASE, "data", "notes")
+
+# Day 3: structured todos stored as JSON
+TODOS_FILE = os.path.join(_BASE, "data", "todos.json")
 
 # ─── Apps ────────────────────────────────────────────────────────────────────
 # Maps short names → executable / command used to launch apps.
-# Add or change entries to match apps installed on your machine.
 APP_MAP: dict[str, str] = {
-    "notepad":   "notepad",
+    "notepad":    "notepad",
     "calculator": "calc",
-    "browser":   "start chrome",           # or "start msedge" / "start firefox"
-    "vscode":    "code .",
-    "terminal":  "start cmd",
-    "explorer":  "explorer .",
-    "paint":     "mspaint",
+    "browser":    "start chrome",
+    "vscode":     "code .",
+    "terminal":   "start cmd",
+    "explorer":   "explorer .",
+    "paint":      "mspaint",
 }
+
+# ─── AI Integration (Optional) ───────────────────────────────────────────────
+# Set your API key here OR create a .env file with the key (recommended).
+# Jarvis will load .env automatically if python-dotenv is installed.
+#
+# Supported providers: "gemini" | "openai" | "" (disabled)
+AI_PROVIDER = ""          # e.g. "gemini"
+
+GEMINI_API_KEY  = os.getenv("GEMINI_API_KEY",  "")
+OPENAI_API_KEY  = os.getenv("OPENAI_API_KEY",  "")
 
 # ─── Jokes ───────────────────────────────────────────────────────────────────
 JOKES: list[str] = [
@@ -45,4 +62,18 @@ JOKES: list[str] = [
     "Debugging: being the detective in a crime movie where you're also the murderer.",
     "How many programmers does it take to change a light bulb? None — that's a hardware problem.",
     "I would tell you a UDP joke, but you might not get it.",
+]
+
+# ─── Quotes ──────────────────────────────────────────────────────────────────
+QUOTES: list[str] = [
+    "The secret of getting ahead is getting started. — Mark Twain",
+    "It always seems impossible until it's done. — Nelson Mandela",
+    "Don't watch the clock; do what it does. Keep going. — Sam Levenson",
+    "The only way to do great work is to love what you do. — Steve Jobs",
+    "Code is like humor. When you have to explain it, it's bad. — Cory House",
+    "First, solve the problem. Then, write the code. — John Johnson",
+    "Programs must be written for people to read. — Abelson & Sussman",
+    "Simplicity is the soul of efficiency. — Austin Freeman",
+    "Make it work, make it right, make it fast. — Kent Beck",
+    "Talk is cheap. Show me the code. — Linus Torvalds",
 ]

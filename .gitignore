@@ -32,3 +32,8 @@ Thumbs.db
 dist/
 build/
 *.egg-info/
+
+# Day 3 — secrets and personal data
+.env
+data/notes/*.txt
+data/todos.json
