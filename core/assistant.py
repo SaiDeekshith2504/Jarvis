@@ -5,6 +5,9 @@ The main loop of Jarvis. Handles startup, input, routing, and shutdown.
 
 Day 2: Imports voice module, wires speak()/listen(), supports VOICE_ENABLED flag.
 Day 3: Adds startup_capabilities() teaser; improved exit message.
+Day 4: Adds background reminder check on every loop iteration;
+       "What can I do for you today?" prompt on startup;
+       cleaner goodbye message; stop/exit aliases.
 """
 
 from __future__ import annotations
@@ -15,6 +18,7 @@ from config import VOICE_ENABLED
 from core.greeting  import greet_user
 from core.commands  import handle_command
 from core.utils     import display_banner, get_input, startup_capabilities
+from core           import reminders as rem_engine
 
 # ── Import voice module (graceful if unavailable) ────────────────────────────
 try:
@@ -41,11 +45,25 @@ def _print_voice_status(enabled: bool) -> None:
 
 
 def _startup_hints(voice_mode: bool) -> None:
-    print("  Type a command below — or just ask a question naturally.")
+    print("  What can I do for you today?")
+    print("  Type a command or ask a question naturally.")
     if voice_mode:
         print("  Voice mode is ACTIVE — speak now, or type normally.\n")
     else:
         print("  Voice mode is OFF — type 'voice' to enable it.\n")
+
+
+def _check_and_notify_reminders(speak_fn) -> None:
+    """
+    Runs the reminder check and prints/speaks any due reminders.
+    Called on every loop iteration so nothing is missed.
+    """
+    alert = rem_engine.check_reminders()
+    if alert:
+        if speak_fn:
+            speak_fn(alert)
+        else:
+            print(f"\n  [Jarvis] {alert}\n")
 
 
 # ─── Main Loop ───────────────────────────────────────────────────────────────
@@ -70,8 +88,14 @@ def run_jarvis() -> None:
     startup_capabilities()
     _startup_hints(voice_mode)
 
+    # Check for any overdue reminders right on startup
+    _check_and_notify_reminders(speak_fn)
+
     # ── Command Loop ─────────────────────────────────────────────────────────
     while True:
+        # Passive reminder check on every loop (lightweight — just reads JSON)
+        _check_and_notify_reminders(speak_fn)
+
         user_input = get_input(voice_mode=voice_mode, listen_fn=listen)
 
         if not user_input:
@@ -80,8 +104,11 @@ def run_jarvis() -> None:
         lower = user_input.lower().strip()
 
         # ── Exit ─────────────────────────────────────────────────────────────
-        if lower in ("exit", "quit", "bye", "goodbye", "stop"):
-            msg = "Thanks for using Jarvis. See you next time! 👋"
+        if lower in ("exit", "quit", "bye", "goodbye", "stop", "close"):
+            msg = (
+                "Thanks for using Jarvis. Goodbye! 👋\n"
+                "  Stay productive — see you next time!"
+            )
             if speak_fn:
                 speak_fn(msg)
             else:

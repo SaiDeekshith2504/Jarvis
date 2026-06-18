@@ -13,6 +13,10 @@ psutil             # CPU / RAM / disk stats (sysinfo command)
 requests           # HTTP calls (future: REST APIs)
 python-dotenv      # load API keys from .env file
 
+# ── Day 4 (scheduling + reminders) ───────────────────────────────────────────
+# No new external dependencies — Day 4 uses only the Python standard library
+# (datetime, json, os, re) for the reminder engine.
+
 # ── Day 3 AI (optional — install whichever you use) ───────────────────────────
 # google-generativeai   # Gemini API  →  pip install google-generativeai
 # openai                # OpenAI API  →  pip install openai

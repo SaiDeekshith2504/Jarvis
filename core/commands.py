@@ -9,6 +9,9 @@ Day 2: search, open, note, notes, status, joke  (+ Day 1 preserved)
 Day 3: create note, write note, list notes, open file,
        create todo, list todos, done todo,
        sysinfo, quote, ask, clear notes          (+ Day 1+2 preserved)
+Day 4: remind me, list reminders, check reminders, clear reminder,
+       morning summary, night summary, routine,
+       status (enhanced with todos + reminders)  (+ Day 1-3 preserved)
 """
 
 from __future__ import annotations
@@ -20,7 +23,11 @@ import subprocess
 import webbrowser
 
 import config
-from config import APP_MAP, JOKES, NOTES_FILE, NOTES_DIR, TODOS_FILE, QUOTES
+from config import (
+    APP_MAP, JOKES, NOTES_FILE, NOTES_DIR, TODOS_FILE, QUOTES,
+    DAILY_ROUTINE, MORNING_MESSAGES, NIGHT_MESSAGES,
+)
+from core import reminders as rem_engine
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -28,9 +35,11 @@ from config import APP_MAP, JOKES, NOTES_FILE, NOTES_DIR, TODOS_FILE, QUOTES
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def cmd_time(_args: str) -> str:
-    """Returns the current local time."""
-    now = datetime.datetime.now().strftime("%I:%M %p")
-    return f"The current time is {now}."
+    """Returns the current local time with timezone note."""
+    now = datetime.datetime.now()
+    time_str = now.strftime("%I:%M %p")
+    tz_name  = datetime.datetime.now().astimezone().strftime("%Z")
+    return f"The current time is {time_str} ({tz_name})."
 
 
 def cmd_date(_args: str) -> str:
@@ -41,7 +50,7 @@ def cmd_date(_args: str) -> str:
 
 def cmd_hello(_args: str) -> str:
     """Responds to a greeting."""
-    return "Hello! Great to hear from you. What do you need?"
+    return "Hello! Great to hear from you. What can I do for you today?"
 
 
 def cmd_about(_args: str) -> str:
@@ -145,33 +154,6 @@ def cmd_notes(_args: str) -> str:
         return f"Couldn't read notes: {exc}"
 
 
-def cmd_status(_args: str) -> str:
-    """
-    Shows a quick system snapshot: date/time, user, platform, Python version.
-    Usage: status
-    """
-    import platform
-    import getpass
-
-    now     = datetime.datetime.now().strftime("%A, %B %d %Y  %I:%M %p")
-    user    = getpass.getuser()
-    system  = platform.system()
-    release = platform.release()
-    py_ver  = platform.python_version()
-    machine = platform.machine()
-
-    lines = [
-        "── System Status ───────────────────────────────",
-        f"  User       : {user}",
-        f"  Date/Time  : {now}",
-        f"  OS         : {system} {release} ({machine})",
-        f"  Python     : {py_ver}",
-        f"  Jarvis     : v{config.VERSION} · {config.DAY}",
-        "────────────────────────────────────────────────",
-    ]
-    return "\n".join(lines)
-
-
 def cmd_joke(_args: str) -> str:
     """Tells a random programming joke. Usage: joke"""
     return random.choice(JOKES)
@@ -183,7 +165,7 @@ def cmd_voice(_args: str) -> str:
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-#  DAY 3 — NEW COMMANDS
+#  DAY 3 — COMMANDS (unchanged)
 # ═══════════════════════════════════════════════════════════════════════════════
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -470,11 +452,6 @@ def cmd_ask(args: str) -> str:
     """
     Sends a question to the configured AI provider (Gemini or OpenAI).
     Usage: ask <your question>
-
-    Configure in config.py:
-        AI_PROVIDER    = "gemini"   (or "openai")
-        GEMINI_API_KEY = "your_key"
-    Or add a .env file with GEMINI_API_KEY=your_key
     """
     if not args.strip():
         return "What do you want to ask? Usage: ask <your question>"
@@ -482,14 +459,12 @@ def cmd_ask(args: str) -> str:
     question = args.strip()
     provider = config.AI_PROVIDER.lower()
 
-    # Load .env if python-dotenv is available
     try:
         from dotenv import load_dotenv
         load_dotenv()
     except ImportError:
         pass
 
-    # ── Gemini ────────────────────────────────────────────────────────────────
     if provider == "gemini":
         api_key = os.getenv("GEMINI_API_KEY") or config.GEMINI_API_KEY
         if not api_key:
@@ -505,14 +480,10 @@ def cmd_ask(args: str) -> str:
             response = model.generate_content(question)
             return response.text.strip()
         except ImportError:
-            return (
-                "google-generativeai is not installed.\n"
-                "  → pip install google-generativeai"
-            )
+            return "google-generativeai is not installed.\n  → pip install google-generativeai"
         except Exception as exc:
             return f"Gemini error: {exc}"
 
-    # ── OpenAI ───────────────────────────────────────────────────────────────
     elif provider == "openai":
         api_key = os.getenv("OPENAI_API_KEY") or config.OPENAI_API_KEY
         if not api_key:
@@ -535,7 +506,6 @@ def cmd_ask(args: str) -> str:
         except Exception as exc:
             return f"OpenAI error: {exc}"
 
-    # ── Not configured ────────────────────────────────────────────────────────
     else:
         return (
             "AI mode is not configured.\n"
@@ -545,7 +515,284 @@ def cmd_ask(args: str) -> str:
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-#  HELP — updated for Day 3
+#  DAY 4 — NEW COMMANDS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# ── Reminders ────────────────────────────────────────────────────────────────
+
+def cmd_remind(args: str) -> str:
+    """
+    Sets a reminder at a specified time.
+    Usage: remind me <time> <task>
+
+    Time formats:
+      remind me 08:30 Attend class
+      remind me 2026-06-20 09:00 Submit assignment
+      remind me tomorrow 10:00 Team meeting
+      remind me in 30 minutes Take a break
+      remind me in 2 hours Review notes
+    """
+    args = args.strip()
+    if not args:
+        return (
+            "Usage: remind me <time> <task>\n"
+            "  Examples:\n"
+            "    remind me 08:30 Attend class\n"
+            "    remind me tomorrow 09:00 Submit assignment\n"
+            "    remind me in 30 minutes Take a break"
+        )
+
+    # Strip leading "me " if user typed "remind me ..."
+    if args.lower().startswith("me "):
+        args = args[3:]
+
+    # Try to extract time from common patterns
+    # Pattern: "in X minutes/hours <task>"
+    import re
+    m = re.match(r"(in\s+\d+\s+(?:minute|minutes|hour|hours))\s+(.*)", args, re.IGNORECASE)
+    if m:
+        return rem_engine.add_reminder(m.group(2), m.group(1))
+
+    # Pattern: "tomorrow HH:MM <task>"
+    m = re.match(r"(tomorrow\s+\d{1,2}:\d{2})\s+(.*)", args, re.IGNORECASE)
+    if m:
+        return rem_engine.add_reminder(m.group(2), m.group(1))
+
+    # Pattern: "YYYY-MM-DD HH:MM <task>"
+    m = re.match(r"(\d{4}-\d{2}-\d{2}\s+\d{1,2}:\d{2})\s+(.*)", args)
+    if m:
+        return rem_engine.add_reminder(m.group(2), m.group(1))
+
+    # Pattern: "HH:MM <task>"
+    m = re.match(r"(\d{1,2}:\d{2})\s+(.*)", args)
+    if m:
+        return rem_engine.add_reminder(m.group(2), m.group(1))
+
+    return (
+        f"I couldn't parse a time from '{args}'.\n"
+        "  Try: remind me 08:30 <task>  |  remind me in 20 minutes <task>"
+    )
+
+
+def cmd_list_reminders(_args: str) -> str:
+    """Shows all pending reminders. Usage: list reminders"""
+    return rem_engine.list_reminders()
+
+
+def cmd_check_reminders(_args: str) -> str:
+    """Checks for due reminders and marks them done. Usage: check reminders"""
+    result = rem_engine.check_reminders()
+    if result:
+        return result
+    return "No reminders are due right now. ✅"
+
+
+def cmd_clear_reminder(args: str) -> str:
+    """
+    Marks a reminder as done by index.
+    Usage: clear reminder <#>
+    """
+    return rem_engine.clear_reminder(args.strip())
+
+
+# ── Status (enhanced for Day 4) ───────────────────────────────────────────────
+
+def cmd_status(_args: str) -> str:
+    """
+    Shows a full productivity snapshot: date/time, user, OS, todos, reminders.
+    Usage: status
+    """
+    import platform
+    import getpass
+
+    now     = datetime.datetime.now().strftime("%A, %B %d %Y  %I:%M %p")
+    tz_name = datetime.datetime.now().astimezone().strftime("%Z")
+    user    = getpass.getuser()
+    system  = platform.system()
+    release = platform.release()
+    py_ver  = platform.python_version()
+
+    # Count pending todos
+    todos   = _load_todos()
+    pending_todos = sum(1 for t in todos if not t["done"])
+    done_todos    = sum(1 for t in todos if t["done"])
+
+    # Count pending reminders
+    all_reminders     = rem_engine._load_reminders()
+    pending_reminders = sum(1 for r in all_reminders if r["status"] == "pending")
+
+    lines = [
+        "── Jarvis Status ───────────────────────────────────────",
+        f"  User         : {user}",
+        f"  Date/Time    : {now} ({tz_name})",
+        f"  OS           : {system} {release}",
+        f"  Python       : {py_ver}",
+        f"  Jarvis       : v{config.VERSION} · {config.DAY}",
+        "  ─────────────────────────────────────────────────────",
+        f"  Todos        : {pending_todos} pending  |  {done_todos} done",
+        f"  Reminders    : {pending_reminders} pending",
+        "─────────────────────────────────────────────────────────",
+    ]
+    return "\n".join(lines)
+
+
+# ── Morning Summary ──────────────────────────────────────────────────────────
+
+def cmd_morning_summary(_args: str) -> str:
+    """
+    Displays a morning briefing: date, todos, reminders, + motivation.
+    Usage: morning summary
+    """
+    now  = datetime.datetime.now()
+    date = now.strftime("%A, %B %d, %Y")
+    time = now.strftime("%I:%M %p")
+
+    todos         = _load_todos()
+    pending_todos = [t for t in todos if not t["done"]]
+
+    all_reminders     = rem_engine._load_reminders()
+    pending_reminders = [r for r in all_reminders if r["status"] == "pending"]
+
+    lines = [
+        "=" * 56,
+        "       GOOD MORNING -- DAILY BRIEFING",
+        "=" * 56,
+        f"\n  Date : {date}",
+        f"  Time : {time}\n",
+    ]
+
+    # Todos section
+    if pending_todos:
+        lines.append(f"  ✅  Pending Todos ({len(pending_todos)})")
+        for t in pending_todos[:5]:   # show up to 5
+            lines.append(f"       [ ] {t['task']}")
+        if len(pending_todos) > 5:
+            lines.append(f"       … and {len(pending_todos) - 5} more. Use 'list todos'.")
+    else:
+        lines.append("  ✅  No pending todos — clean slate! 🎉")
+
+    lines.append("")
+
+    # Reminders section
+    if pending_reminders:
+        lines.append(f"  ⏰  Upcoming Reminders ({len(pending_reminders)})")
+        for r in pending_reminders[:5]:
+            lines.append(f"       [{r['time']}]  {r['task']}")
+        if len(pending_reminders) > 5:
+            lines.append(f"       … and {len(pending_reminders) - 5} more. Use 'list reminders'.")
+    else:
+        lines.append("  ⏰  No reminders scheduled.")
+
+    lines.append("")
+    lines.append(f"  💬  {random.choice(MORNING_MESSAGES)}")
+    lines.append("\n  Type 'routine' to see your daily schedule.")
+    lines.append("──────────────────────────────────────────────────────")
+
+    return "\n".join(lines)
+
+
+# ── Night Summary ─────────────────────────────────────────────────────────────
+
+def cmd_night_summary(_args: str) -> str:
+    """
+    Displays an evening wrap-up: completed todos, done reminders, night message.
+    Usage: night summary
+    """
+    now  = datetime.datetime.now()
+    date = now.strftime("%A, %B %d, %Y")
+
+    todos      = _load_todos()
+    done_todos = [t for t in todos if t["done"]]
+
+    all_reminders  = rem_engine._load_reminders()
+    done_reminders = [r for r in all_reminders if r["status"] == "done"]
+
+    lines = [
+        "=" * 56,
+        "           EVENING WRAP-UP SUMMARY",
+        "=" * 56,
+        f"\n  Date : {date}\n",
+    ]
+
+    # Completed todos
+    if done_todos:
+        lines.append(f"  ✅  Completed Todos Today ({len(done_todos)})")
+        for t in done_todos[-5:]:    # show last 5
+            lines.append(f"       [✓] {t['task']}")
+    else:
+        lines.append("  ✅  No todos marked done yet.")
+
+    lines.append("")
+
+    # Done reminders
+    if done_reminders:
+        lines.append(f"  ⏰  Completed Reminders ({len(done_reminders)})")
+        for r in done_reminders[-5:]:
+            lines.append(f"       [✓] {r['task']}")
+    else:
+        lines.append("  ⏰  No reminders completed today.")
+
+    lines.append("")
+    lines.append(f"  💬  {random.choice(NIGHT_MESSAGES)}")
+    lines.append("\n  Sweet dreams. Jarvis will be here when you wake up. 🌟")
+    lines.append("──────────────────────────────────────────────────────")
+
+    return "\n".join(lines)
+
+
+# ── Daily Routine ─────────────────────────────────────────────────────────────
+
+def cmd_routine(_args: str) -> str:
+    """
+    Displays the configured daily routine from config.py.
+    Usage: routine
+    """
+    now  = datetime.datetime.now()
+    hour = now.hour
+
+    lines = ["── 📋  Your Daily Routine ──────────────────────────────"]
+    for item in DAILY_ROUTINE:
+        # Highlight the current time block
+        try:
+            slot_hour = int(item.split(":")[0])
+            marker = " ◀ NOW" if slot_hour == hour else ""
+        except (ValueError, IndexError):
+            marker = ""
+        lines.append(f"  {item}{marker}")
+    lines.append("────────────────────────────────────────────────────────")
+    lines.append("  (Edit your routine in config.py → DAILY_ROUTINE)")
+    return "\n".join(lines)
+
+
+# ─── Context-aware responses ─────────────────────────────────────────────────
+
+def _handle_busy(user_input: str) -> str | None:
+    """
+    Detects phrases like "a lot to do", "busy", "overwhelmed" and gives
+    context-aware suggestions.
+    """
+    triggers = ["a lot to do", "so much to do", "busy", "overwhelmed",
+                "too many tasks", "stressed", "behind on"]
+    text = user_input.lower()
+    if any(t in text for t in triggers):
+        todos   = _load_todos()
+        pending = sum(1 for t in todos if not t["done"])
+        if pending:
+            return (
+                f"Sounds like you've got a lot on your plate!\n"
+                f"  You have {pending} pending todo(s).\n"
+                f"  Try: 'list todos' to review them, or 'morning summary' for a full briefing."
+            )
+        else:
+            return (
+                "Feeling busy? Your todo list is actually clear! 🎉\n"
+                "  Try 'morning summary' for a full briefing, or 'routine' to plan your day."
+            )
+    return None
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+#  HELP — updated for Day 4
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def cmd_help(_args: str) -> str:
@@ -553,52 +800,61 @@ def cmd_help(_args: str) -> str:
     lines = [
         "Here's everything I can do:\n",
         "  ── Core ──────────────────────────────────────────────",
-        "  time                          → current time",
-        "  date                          → today's date",
-        "  hello / hi / hey              → say hello",
-        "  about                         → about Jarvis",
-        "  status                        → OS + Python snapshot",
-        "  sysinfo                       → CPU / RAM / disk usage",
+        "  time                             → current time (with timezone)",
+        "  date                             → today's date",
+        "  hello / hi / hey                 → say hello",
+        "  about                            → about Jarvis",
+        "  status                           → full snapshot (OS + todos + reminders)",
+        "  sysinfo                          → CPU / RAM / disk usage",
+        "",
+        "  ── 📋 Daily Routine (Day 4) ──────────────────────────",
+        "  morning summary                  → today's date, todos & reminders",
+        "  night summary                    → completed tasks + good night",
+        "  routine                          → your daily schedule",
+        "",
+        "  ── ⏰ Reminders (Day 4) ──────────────────────────────",
+        "  remind me <time> <task>          → set a reminder",
+        "  list reminders                   → show pending reminders",
+        "  check reminders                  → alert if any are due",
+        "  clear reminder <#>               → dismiss a reminder",
         "",
         "  ── Quick Note (Day 2) ────────────────────────────────",
-        "  note <text>                   → timestamped quick note",
-        "  notes                         → show quick notes",
+        "  note <text>                      → timestamped quick note",
+        "  notes                            → show quick notes",
         "",
         "  ── Notes (Day 3 — file per note) ────────────────────",
-        "  create note <title>           → create notes/<title>.txt",
-        "  write note <title> <content>  → append content to note",
-        "  list notes                    → list all note files",
-        "  open file <name>              → open file in default app",
-        "  clear notes                   → delete all note files",
+        "  create note <title>              → create notes/<title>.txt",
+        "  write note <title> <content>     → append content to note",
+        "  list notes                       → list all note files",
+        "  open file <name>                 → open file in default app",
+        "  clear notes                      → delete all note files",
         "",
         "  ── Todos ─────────────────────────────────────────────",
-        "  create todo <task>            → add a task",
-        "  list todos                    → show all todos",
-        "  done todo <#>                 → mark a todo complete",
+        "  create todo <task>               → add a task",
+        "  list todos                       → show all todos",
+        "  done todo <#>                    → mark a todo complete",
         "",
         "  ── Web & Apps ────────────────────────────────────────",
-        "  search <query>                → Google search in browser",
-        "  open <app>                    → launch an app",
+        "  search <query>                   → Google search in browser",
+        "  open <app>                       → launch an app",
         "",
         "  ── Fun ───────────────────────────────────────────────",
-        "  joke                          → random programmer joke",
-        "  quote                         → random motivational quote",
+        "  joke                             → random programmer joke",
+        "  quote                            → random motivational quote",
         "",
         "  ── AI (optional) ─────────────────────────────────────",
-        "  ask <question>                → ask the AI anything",
+        "  ask <question>                   → ask the AI anything",
         "",
         "  ── Control ───────────────────────────────────────────",
-        "  voice                         → toggle voice / text mode",
-        "  help                          → show this list",
-        "  exit / quit / bye             → shut down Jarvis",
+        "  voice                            → toggle voice / text mode",
+        "  help                             → show this list",
+        "  exit / quit / bye / stop         → shut down Jarvis",
     ]
     return "\n".join(lines)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
 #  SMART DISPATCHERS
-#  Multi-word commands like "create note <title>" need a dispatcher at the
-#  first-word level so the registry stays clean.
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def _dispatch_open(args: str) -> str:
@@ -637,14 +893,16 @@ def _dispatch_write(args: str) -> str:
 
 
 def _dispatch_list(args: str) -> str:
-    """Routes 'list notes' or 'list todos'."""
+    """Routes 'list notes', 'list todos', or 'list reminders'."""
     first = args.strip().lower().split()[0] if args.strip() else ""
 
     if first == "notes":
         return cmd_list_notes("")
     if first in ("todos", "todo"):
         return cmd_list_todos("")
-    return "I can list 'notes' or 'todos'. Try: list notes | list todos"
+    if first in ("reminders", "reminder"):
+        return cmd_list_reminders("")
+    return "I can list 'notes', 'todos', or 'reminders'."
 
 
 def _dispatch_done(args: str) -> str:
@@ -659,11 +917,45 @@ def _dispatch_done(args: str) -> str:
 
 
 def _dispatch_clear(args: str) -> str:
-    """Routes 'clear notes'."""
-    first = args.strip().lower().split()[0] if args.strip() else ""
+    """Routes 'clear notes' or 'clear reminder <#>'."""
+    parts = args.strip().lower().split(maxsplit=1)
+    first = parts[0] if parts else ""
+    rest  = parts[1] if len(parts) > 1 else ""
+
     if first == "notes":
         return cmd_clear_notes("")
-    return "Did you mean 'clear notes'?"
+    if first in ("reminder", "reminders"):
+        return cmd_clear_reminder(rest)
+    return "Did you mean 'clear notes' or 'clear reminder <#>'?"
+
+
+def _dispatch_check(args: str) -> str:
+    """Routes 'check reminders'."""
+    first = args.strip().lower().split()[0] if args.strip() else ""
+    if first in ("reminders", "reminder"):
+        return cmd_check_reminders("")
+    return "Did you mean 'check reminders'?"
+
+
+def _dispatch_morning(args: str) -> str:
+    """Routes 'morning summary'."""
+    first = args.strip().lower().split()[0] if args.strip() else ""
+    if first == "summary":
+        return cmd_morning_summary("")
+    return cmd_morning_summary("")   # "morning" alone also works
+
+
+def _dispatch_night(args: str) -> str:
+    """Routes 'night summary'."""
+    first = args.strip().lower().split()[0] if args.strip() else ""
+    if first == "summary":
+        return cmd_night_summary("")
+    return cmd_night_summary("")     # "night" alone also works
+
+
+def _dispatch_remind(args: str) -> str:
+    """Routes 'remind me <time> <task>'."""
+    return cmd_remind(args)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -702,19 +994,31 @@ COMMAND_MAP: dict[str, callable] = {
     "open":    _dispatch_open,
     "note":    cmd_note,
     "notes":   cmd_notes,
-    "status":  cmd_status,
     "joke":    cmd_joke,
     "voice":   cmd_voice,
 
     # ── Day 3 ────────────────────────────────────────────────────────────────
     "create":  _dispatch_create,
     "write":   _dispatch_write,
-    "list":    _dispatch_list,
     "done":    _dispatch_done,
-    "clear":   _dispatch_clear,
     "sysinfo": cmd_sysinfo,
     "quote":   cmd_quote,
     "ask":     cmd_ask,
+
+    # ── Day 4 ────────────────────────────────────────────────────────────────
+    "remind":   _dispatch_remind,
+    "reminder": _dispatch_remind,
+    "reminders": cmd_list_reminders,
+    "routine":  cmd_routine,
+    "morning":  _dispatch_morning,
+    "night":    _dispatch_night,
+    "evening":  _dispatch_night,
+
+    # ── Unified dispatchers (updated for Day 4) ───────────────────────────────
+    "list":    _dispatch_list,
+    "clear":   _dispatch_clear,
+    "check":   _dispatch_check,
+    "status":  cmd_status,
 }
 
 
@@ -726,7 +1030,17 @@ def handle_command(user_input: str, speak_fn=None) -> str:
     """
     Parses user input, routes it to the correct handler, and returns the
     response string. Optionally calls speak_fn(response) for TTS output.
+    Also runs context-aware checks (e.g., "I'm busy" → show todos).
     """
+    # Context-aware check first
+    ctx = _handle_busy(user_input)
+    if ctx:
+        if speak_fn:
+            speak_fn(ctx)
+        else:
+            print(f"\n  [Jarvis] {ctx}\n")
+        return ctx
+
     parts   = user_input.strip().split(maxsplit=1)
     keyword = parts[0].lower()
     args    = parts[1] if len(parts) > 1 else ""
@@ -736,7 +1050,6 @@ def handle_command(user_input: str, speak_fn=None) -> str:
     if handler:
         response = handler(args)
     elif _looks_like_search(user_input):
-        # Auto-search natural-language questions
         response = (
             f"I don't know that command, but it sounds like a question.\n"
             f"  Searching Google for '{user_input}'…"

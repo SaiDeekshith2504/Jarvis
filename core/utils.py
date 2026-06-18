@@ -5,6 +5,7 @@ Shared helpers used across Jarvis modules.
 
 Day 2: Banner updated to v0.2; get_input() supports voice fallback.
 Day 3: Banner updated to v0.3; startup_capabilities() added.
+Day 4: Banner updated to v0.4; startup_capabilities() shows Day 4 features.
 """
 
 import sys
@@ -22,7 +23,7 @@ JARVIS_BANNER = r"""
                V E R Y   I N T E L L I G E N T
                       S Y S T E M
 
-                     [ Day 3 — v0.3 ]
+                     [ Day 4 — v0.4 ]
   ══════════════════════════════════════════════════════
 """
 
@@ -34,13 +35,16 @@ def display_banner() -> None:
 
 def startup_capabilities() -> None:
     """Prints a concise 'what can I do?' teaser on startup."""
-    print("  ┌─ What can I do? ─────────────────────────────────────┐")
-    print("  │  📝  create note / write note / list notes           │")
-    print("  │  ✅  create todo / list todos / done todo            │")
-    print("  │  🔍  search <query>  •  ask <question> (AI)         │")
-    print("  │  💻  open <app>  •  sysinfo  •  status              │")
-    print("  │  😂  joke  •  💡 quote  •  help (full list)         │")
-    print("  └───────────────────────────────────────────────────────┘")
+    print("  ┌─ What can I do? ──────────────────────────────────────┐")
+    print("  │  ⏰  remind me <time> <task>  •  list reminders       │")
+    print("  │  🌅  morning summary          •  night summary        │")
+    print("  │  📋  routine                  •  status               │")
+    print("  │  📝  create note / write note / list notes            │")
+    print("  │  ✅  create todo / list todos / done todo             │")
+    print("  │  🔍  search <query>  •  ask <question> (AI)          │")
+    print("  │  💻  open <app>  •  sysinfo                          │")
+    print("  │  😂  joke  •  💡 quote  •  help (full list)          │")
+    print("  └──────────────────────────────────────────────────────-┘")
     print()
 
 

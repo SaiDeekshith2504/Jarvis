@@ -8,8 +8,8 @@ Edit this file to customise behaviour without touching core logic.
 import os
 
 # ─── Version ─────────────────────────────────────────────────────────────────
-VERSION = "0.3"
-DAY     = "Day 3"
+VERSION = "0.4"
+DAY     = "Day 4"
 
 # ─── Voice Mode ──────────────────────────────────────────────────────────────
 # Set to True to enable microphone input + TTS output.
@@ -28,6 +28,9 @@ NOTES_DIR = os.path.join(_BASE, "data", "notes")
 # Day 3: structured todos stored as JSON
 TODOS_FILE = os.path.join(_BASE, "data", "todos.json")
 
+# Day 4: reminders stored as JSON
+REMINDERS_FILE = os.path.join(_BASE, "data", "reminders.json")
+
 # ─── Apps ────────────────────────────────────────────────────────────────────
 # Maps short names → executable / command used to launch apps.
 APP_MAP: dict[str, str] = {
@@ -39,6 +42,42 @@ APP_MAP: dict[str, str] = {
     "explorer":   "explorer .",
     "paint":      "mspaint",
 }
+
+# ─── Daily Routine ───────────────────────────────────────────────────────────
+# A simple static daily routine shown with the 'routine' command.
+DAILY_ROUTINE: list[str] = [
+    "06:30  Wake up & morning stretch",
+    "07:00  Breakfast + review goals for the day",
+    "08:00  Deep work session #1 (most important task)",
+    "10:00  Short break — walk / hydrate",
+    "10:15  Deep work session #2 (study / code)",
+    "12:30  Lunch break",
+    "13:30  Light tasks — emails, notes, planning",
+    "15:00  Deep work session #3 (projects / assignments)",
+    "17:00  Review todos & mark completed items",
+    "18:00  Exercise / outdoor time",
+    "19:30  Personal learning (reading / courses)",
+    "21:00  Wind down — no screens, light journaling",
+    "22:30  Sleep",
+]
+
+# ─── Motivational Morning Message ────────────────────────────────────────────
+MORNING_MESSAGES: list[str] = [
+    "Today is a fresh start. Make it count! 💪",
+    "Every expert was once a beginner. Keep going! 🚀",
+    "Your future self will thank you for the work you do today. 🌟",
+    "Small steps every day lead to big results. 🎯",
+    "Focus on progress, not perfection. You've got this! ✨",
+]
+
+# ─── Night Messages ───────────────────────────────────────────────────────────
+NIGHT_MESSAGES: list[str] = [
+    "Rest well — you've earned it. Tomorrow is another opportunity. 🌙",
+    "Great work today. Recharge and come back stronger! 😴",
+    "Consistency beats intensity. See you tomorrow! 🌃",
+    "Sleep is productivity for your brain. Good night! 💤",
+    "Today's effort is tomorrow's progress. Sleep well! ⭐",
+]
 
 # ─── AI Integration (Optional) ───────────────────────────────────────────────
 # Set your API key here OR create a .env file with the key (recommended).
