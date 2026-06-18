@@ -1,6 +1,7 @@
-# Jarvis — Personal AI Assistant
+# Jarvis -- Personal AI Assistant
 
-> A modular Python personal assistant, built to grow. Day 4: Scheduling, Reminders & Daily Routine.
+> A modular Python personal assistant, built to grow.
+> **Day 5: AI-Powered, Personalized, Shell-Integrated.**
 
 ---
 
@@ -8,28 +9,32 @@
 
 ```
 Jarvis/
-├── main.py                  # Entry point — run this to start Jarvis
-├── config.py                # All settings: paths, apps, routine, messages
+├── main.py                  # Entry point -- run this to start Jarvis
+├── config.py                # All settings: paths, apps, AI, routine, messages
 ├── requirements.txt         # All dependencies
+├── .env.example             # Copy to .env and add your API keys
 │
 ├── core/
 │   ├── __init__.py
 │   ├── assistant.py         # Main loop: startup, input, routing, shutdown
 │   ├── commands.py          # All command handlers + command registry
-│   ├── reminders.py         # ★ Day 4 — Reminder engine (add/list/check/clear)
-│   ├── greeting.py          # Time-aware greeting logic
+│   ├── ai.py                # ★ Day 5 -- AI engine (Gemini/OpenAI + rule-based fallback)
+│   ├── user_profile.py      # ★ Day 5 -- Personalization & memory (data/user.json)
+│   ├── reminders.py         # Day 4 -- Reminder engine (add/list/check/clear)
+│   ├── greeting.py          # Time-aware, name-aware greeting
 │   ├── voice.py             # TTS + microphone input
 │   └── utils.py             # Shared helpers: banner, input reader
 │
 ├── data/
 │   ├── notes.txt            # Day 2 quick notes (append-only)
 │   ├── todos.json           # Day 3 structured todo list
-│   ├── reminders.json       # ★ Day 4 scheduled reminders
+│   ├── reminders.json       # Day 4 scheduled reminders
+│   ├── user.json            # ★ Day 5 personalization profile (name + preferences)
 │   └── notes/               # Day 3 per-title note files
 │
 └── tests/
     ├── __init__.py
-    └── test_commands.py     # Unit tests for command handlers
+    └── test_commands.py     # Unit tests
 ```
 
 ---
@@ -37,97 +42,136 @@ Jarvis/
 ## How to Run
 
 ```bash
-# 1. Navigate to the project folder
+# 1. Clone / navigate to the project folder
 cd path/to/Jarvis
 
-# 2. Install dependencies (Day 2–3 features)
+# 2. Install dependencies
 pip install -r requirements.txt
 
-# 3. Start Jarvis
+# 3. (Optional) Configure AI provider
+cp .env.example .env
+# Edit .env: add GEMINI_API_KEY=... or OPENAI_API_KEY=...
+# Edit config.py: set AI_PROVIDER = "gemini"  (or "openai")
+
+# 4. Start Jarvis
 python main.py
 ```
 
 ---
 
-## Day 4 — New Commands
+## Day 5 -- New Commands
 
+### Personalization
 | Command | What it does |
 |---|---|
-| `remind me 08:30 Attend class` | Set a reminder for today at 08:30 |
-| `remind me tomorrow 09:00 Submit assignment` | Reminder for tomorrow |
-| `remind me in 30 minutes Take a break` | Relative time reminder |
-| `remind me 2026-06-20 14:00 Team meeting` | Absolute date+time reminder |
-| `list reminders` | Show all pending reminders |
-| `check reminders` | Check if any are overdue right now |
-| `clear reminder <#>` | Dismiss a reminder by number |
-| `morning summary` | Date + pending todos + upcoming reminders + motivation |
-| `night summary` | Completed todos + done reminders + good night |
-| `routine` | Print your daily schedule (edit in config.py) |
-| `status` | Full snapshot: time, todos, reminders, OS info |
+| `set name Pandu` | Save your preferred name (persisted in data/user.json) |
+| `get name` | Read your stored name |
+| `set preference theme dark` | Save any preference as key-value |
+| `get preference theme` | Read a stored preference |
+| `my profile` | Show your full profile (name + all preferences) |
+
+### AI Integration
+| Command | What it does |
+|---|---|
+| `ask <question>` | Smart AI answer: calls Gemini/OpenAI or rule-based fallback |
+| `chat` | Enter interactive AI chat mode (type `back` to exit) |
+| `ai status` | Show current AI provider configuration |
+
+### Shell Execution
+| Command | What it does |
+|---|---|
+| `run echo hello` | Run a shell command and show output |
+| `run python --version` | Check Python version |
+| `run dir` | List current directory |
+
+> **Safety**: Dangerous commands (`del`, `rm`, `shutdown`, etc.) are blocked.
+> Edit `BLOCKED_COMMANDS` in `config.py` to customize.
 
 ---
 
 ## All Supported Commands
 
 ### Core (Day 1)
-| Command | What it does |
-|---|---|
-| `time` | Current time (with timezone) |
-| `date` | Today's date |
-| `hello` / `hi` / `hey` | Greeting |
-| `about` | About Jarvis |
-| `help` | Full command list |
-| `exit` / `quit` / `bye` / `stop` | Shut down Jarvis |
+| `time` | `date` | `hello`/`hi` | `about` | `help` | `exit`/`quit`/`bye`/`stop` |
 
 ### Voice & Notes (Day 2)
-| Command | What it does |
-|---|---|
-| `note <text>` | Save a timestamped quick note |
-| `notes` | View all quick notes |
-| `search <query>` | Google search in browser |
-| `open <app>` | Launch an app (browser, vscode, notepad…) |
-| `joke` | Random programmer joke |
-| `voice` | Toggle voice/text mode |
+| `note <text>` | `notes` | `search <query>` | `open <app>` | `joke` | `voice` |
 
 ### Automation (Day 3)
-| Command | What it does |
-|---|---|
-| `create note <title>` | Create a new note file |
-| `write note <title> <content>` | Append to a note |
-| `list notes` | List all note files |
-| `open file <name>` | Open a file in the default app |
-| `clear notes` | Delete all notes |
-| `create todo <task>` | Add a task |
-| `list todos` | Show todos |
-| `done todo <#>` | Mark a todo complete |
-| `sysinfo` | CPU / RAM / disk usage |
-| `quote` | Motivational quote |
-| `ask <question>` | Ask the AI (Gemini / OpenAI) |
+| `create note <title>` | `write note <title> <content>` | `list notes` |
+| `clear notes` | `create todo <task>` | `list todos` | `done todo <#>` |
+| `sysinfo` | `quote` |
+
+### Productivity (Day 4)
+| `remind me <time> <task>` | `list reminders` | `check reminders` | `clear reminder <#>` |
+| `morning summary` | `night summary` | `routine` | `status` |
+
+### AI & Personalization (Day 5)
+| `ask <question>` | `chat` | `ai status` |
+| `set name <name>` | `get name` | `set preference <key> <value>` | `get preference <key>` | `my profile` |
+| `run <command>` |
+
+---
+
+## AI Configuration (config.py + .env)
+
+```python
+# config.py
+AI_PROVIDER = "gemini"        # "gemini" | "openai" | "" (rule-based fallback)
+AI_MODEL    = ""              # optional override, e.g. "gemini-1.5-pro"
+```
+
+```bash
+# .env
+GEMINI_API_KEY=your_key_here
+# or
+OPENAI_API_KEY=your_key_here
+```
+
+**Without an API key**, Jarvis uses its built-in rule-based AI to answer:
+- Questions about itself ("who are you?", "what can you do?")
+- Common greetings, motivation, Python questions, and more.
+- It gracefully suggests using `search` for anything else.
+
+---
+
+## Personalization (data/user.json)
+
+Auto-created on first run with defaults. Edit manually or via commands:
+
+```json
+{
+  "name": "Pandu",
+  "preferences": {
+    "theme": "dark",
+    "language": "English",
+    "preferred_browser": "chrome",
+    "preferred_editor": "vscode",
+    "ai_tone": "friendly"
+  }
+}
+```
 
 ---
 
 ## Configuration (config.py)
 
 ```python
-VOICE_ENABLED = True          # Set False for text-only mode
+VOICE_ENABLED = True          # False for text-only mode
+AI_PROVIDER   = "gemini"      # AI provider
+AI_MODEL      = ""            # Override default model
+BLOCKED_COMMANDS = [...]      # Shell commands to block for safety
 
-REMINDERS_FILE = "data/reminders.json"
-TODOS_FILE     = "data/todos.json"
-NOTES_DIR      = "data/notes/"
-
-APP_MAP = {                   # Add your own apps here
+APP_MAP = {                   # Apps for 'open <name>'
     "vscode": "code .",
     "browser": "start chrome",
     ...
 }
 
-DAILY_ROUTINE = [             # Edit your personal schedule
+DAILY_ROUTINE = [             # Your personal schedule for 'routine'
     "06:30  Wake up",
-    "08:00  Deep work #1",
     ...
 ]
-
-AI_PROVIDER = "gemini"        # or "openai" or "" (disabled)
 ```
 
 ---
@@ -142,38 +186,18 @@ python -m pytest tests/ -v
 
 ## How to Add a New Command
 
-1. Open `core/commands.py`
-2. Write a new function:
+1. Write a function in `core/commands.py`:
 
 ```python
 def cmd_mycommand(args: str) -> str:
     return "Your response here."
 ```
 
-3. Register it in `COMMAND_MAP`:
+2. Register it in `COMMAND_MAP`:
 
 ```python
 COMMAND_MAP["mycommand"] = cmd_mycommand
 ```
-
-That's it. Jarvis will automatically route to it.
-
----
-
-## Day 5 Ideas
-
-| Feature | Description |
-|---|---|
-| 🤖 **AI Chat Mode** | Persistent conversation memory with Gemini/OpenAI |
-| 💻 **Terminal Commands** | Run shell commands directly from Jarvis |
-| 🎭 **Personality Modes** | Switch between formal, casual, and motivator tones |
-| 🌐 **VS Code Integration** | Open files, run tasks, git status from Jarvis |
-| 📊 **Habit Tracker** | Track daily habits with streaks |
-| 🌤️ **Weather** | Show local weather on morning summary |
-| 📆 **Calendar Integration** | Sync with Google Calendar |
-| 🔔 **System Tray Notifications** | Pop-up desktop alerts for reminders |
-| 📈 **Productivity Stats** | Weekly report: todos completed, reminders hit |
-| 🔌 **Plugin System** | Load new commands from external files |
 
 ---
 
@@ -184,4 +208,22 @@ That's it. Jarvis will automatically route to it.
 | Day 1 | Foundation | Greeting, time, date, help, about |
 | Day 2 | Voice & I/O | TTS, microphone, search, notes, open apps |
 | Day 3 | Automation | File notes, todos, sysinfo, AI (ask), quotes |
-| **Day 4** | **Productivity** | **Reminders, morning/night summary, routine, enhanced status** |
+| Day 4 | Productivity | Reminders, morning/night summary, routine, enhanced status |
+| **Day 5** | **AI + Personalization** | **AI engine (Gemini/OpenAI/rule-based), user profile, chat mode, shell run** |
+
+---
+
+## Day 6+ Ideas
+
+| Feature | Description |
+|---|---|
+| 🌤️ **Weather** | Live weather in morning summary (OpenWeatherMap API) |
+| 📆 **Calendar Integration** | Sync with Google Calendar events |
+| 🌐 **Browser Automation** | Open URLs, fill forms via Playwright/Selenium |
+| 💻 **VS Code Integration** | Open files, run tasks from Jarvis |
+| 📊 **Productivity Stats** | Weekly report: todos done, reminders hit, commands used |
+| 🔔 **Desktop Notifications** | System tray pop-ups for overdue reminders |
+| 🎭 **Personality Modes** | Switch between formal, casual, and motivator tones |
+| 🖥️ **GUI / Web Interface** | Tkinter or Flask-based visual dashboard |
+| 🔌 **Plugin System** | Load new command sets from external Python files |
+| 💾 **Conversation History** | Multi-turn AI chat with memory across sessions |

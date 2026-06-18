@@ -12,6 +12,9 @@ Day 3: create note, write note, list notes, open file,
 Day 4: remind me, list reminders, check reminders, clear reminder,
        morning summary, night summary, routine,
        status (enhanced with todos + reminders)  (+ Day 1-3 preserved)
+Day 5: ask (upgraded to ai.py), chat mode,
+       set name, get name, set preference, get preference,
+       my profile, ai status, run <shell command>  (+ Day 1-4 preserved)
 """
 
 from __future__ import annotations
@@ -25,9 +28,11 @@ import webbrowser
 import config
 from config import (
     APP_MAP, JOKES, NOTES_FILE, NOTES_DIR, TODOS_FILE, QUOTES,
-    DAILY_ROUTINE, MORNING_MESSAGES, NIGHT_MESSAGES,
+    DAILY_ROUTINE, MORNING_MESSAGES, NIGHT_MESSAGES, BLOCKED_COMMANDS,
 )
 from core import reminders as rem_engine
+from core import ai as ai_engine
+from core import user_profile as profile_engine
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -453,65 +458,9 @@ def cmd_ask(args: str) -> str:
     Sends a question to the configured AI provider (Gemini or OpenAI).
     Usage: ask <your question>
     """
-    if not args.strip():
-        return "What do you want to ask? Usage: ask <your question>"
-
-    question = args.strip()
-    provider = config.AI_PROVIDER.lower()
-
-    try:
-        from dotenv import load_dotenv
-        load_dotenv()
-    except ImportError:
-        pass
-
-    if provider == "gemini":
-        api_key = os.getenv("GEMINI_API_KEY") or config.GEMINI_API_KEY
-        if not api_key:
-            return (
-                "Gemini API key not set.\n"
-                "  → Add GEMINI_API_KEY=your_key to a .env file,\n"
-                "    or set GEMINI_API_KEY directly in config.py."
-            )
-        try:
-            import google.generativeai as genai
-            genai.configure(api_key=api_key)
-            model    = genai.GenerativeModel("gemini-1.5-flash")
-            response = model.generate_content(question)
-            return response.text.strip()
-        except ImportError:
-            return "google-generativeai is not installed.\n  → pip install google-generativeai"
-        except Exception as exc:
-            return f"Gemini error: {exc}"
-
-    elif provider == "openai":
-        api_key = os.getenv("OPENAI_API_KEY") or config.OPENAI_API_KEY
-        if not api_key:
-            return (
-                "OpenAI API key not set.\n"
-                "  → Add OPENAI_API_KEY=your_key to a .env file,\n"
-                "    or set OPENAI_API_KEY directly in config.py."
-            )
-        try:
-            import openai
-            openai.api_key = api_key
-            resp = openai.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[{"role": "user", "content": question}],
-                max_tokens=300,
-            )
-            return resp.choices[0].message.content.strip()
-        except ImportError:
-            return "openai package not installed. Run: pip install openai"
-        except Exception as exc:
-            return f"OpenAI error: {exc}"
-
-    else:
-        return (
-            "AI mode is not configured.\n"
-            "  → Set AI_PROVIDER = \"gemini\" (or \"openai\") in config.py\n"
-            "  → Add your API key to a .env file or directly in config.py."
-        )
+    # Delegate entirely to the dedicated AI module (Day 5)
+    from core.ai import ask_ai
+    return ask_ai(question)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -792,63 +741,211 @@ def _handle_busy(user_input: str) -> str | None:
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-#  HELP — updated for Day 4
+#  DAY 5 — NEW COMMANDS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# ── Personalization ───────────────────────────────────────────────────────────
+
+def cmd_set_name(args: str) -> str:
+    """
+    Stores the user's preferred name in data/user.json.
+    Usage: set name <your name>
+    """
+    return profile_engine.set_name(args)
+
+
+def cmd_get_name(_args: str) -> str:
+    """
+    Reads and returns the stored user name.
+    Usage: get name
+    """
+    name = profile_engine.get_name()
+    if name:
+        return f"Your name is set to: {name}"
+    return "No name stored yet. Use: set name <your name>"
+
+
+def cmd_set_preference(args: str) -> str:
+    """
+    Stores a user preference as key=value.
+    Usage: set preference <key> <value>
+    Example: set preference theme light
+    """
+    parts = args.strip().split(maxsplit=1)
+    if len(parts) < 2:
+        return "Usage: set preference <key> <value>  (e.g. set preference theme dark)"
+    return profile_engine.set_preference(parts[0], parts[1])
+
+
+def cmd_get_preference(args: str) -> str:
+    """
+    Reads a stored preference value.
+    Usage: get preference <key>
+    """
+    return profile_engine.get_preference(args.strip())
+
+
+def cmd_my_profile(_args: str) -> str:
+    """
+    Shows the full user profile: name + all preferences.
+    Usage: my profile
+    """
+    name  = profile_engine.get_name() or "(not set)"
+    prefs = profile_engine.list_preferences()
+    lines = [
+        "-- Your Profile --------------------------------",
+        f"  Name         : {name}",
+        "",
+        prefs,
+        "  Use 'set name <name>' or 'set preference <key> <value>' to update.",
+    ]
+    return "\n".join(lines)
+
+
+# ── AI status ─────────────────────────────────────────────────────────────────
+
+def cmd_ai_status(_args: str) -> str:
+    """
+    Shows the current AI configuration.
+    Usage: ai status
+    """
+    return ai_engine.ai_status()
+
+
+# ── Chat mode ─────────────────────────────────────────────────────────────────
+
+def cmd_chat(_args: str) -> str:
+    """
+    Enters interactive chat mode — every message is sent to ask_ai().
+    Usage: chat
+    Type 'exit', 'back', or 'stop' to leave chat mode.
+    """
+    # chat_session() is a blocking loop; call it directly.
+    # speak_fn is not wired here because cmd_* functions only return strings.
+    # The actual blocking session is invoked from handle_command() below.
+    return "__CHAT_MODE__"   # sentinel — caught by handle_command
+
+
+# ── Shell run ─────────────────────────────────────────────────────────────────
+
+def cmd_run(args: str) -> str:
+    """
+    Runs a simple shell command and returns its stdout/stderr output.
+    Usage: run echo hello  |  run dir  |  run python --version
+
+    Safety: commands starting with a blocked token are refused.
+    Edit BLOCKED_COMMANDS in config.py to adjust the list.
+    """
+    cmd = args.strip()
+    if not cmd:
+        return "What should I run? Usage: run <shell command>  (e.g. run echo hello)"
+
+    # Safety check: reject blocked command prefixes
+    cmd_lower = cmd.lower()
+    for blocked in BLOCKED_COMMANDS:
+        if cmd_lower.startswith(blocked.lower()):
+            return (
+                f"Sorry, '{blocked}' is on the blocked-commands list for safety.\n"
+                "  Edit BLOCKED_COMMANDS in config.py to adjust."
+            )
+
+    try:
+        result = subprocess.run(
+            cmd,
+            shell=True,
+            capture_output=True,
+            text=True,
+            timeout=10,          # never hang longer than 10 s
+        )
+        output = (result.stdout or "").strip()
+        errors = (result.stderr or "").strip()
+
+        parts = []
+        if output:
+            parts.append(output)
+        if errors:
+            parts.append(f"[stderr] {errors}")
+        if not parts:
+            parts.append("(Command ran successfully with no output.)")
+
+        return "\n".join(parts)
+
+    except subprocess.TimeoutExpired:
+        return "Command timed out after 10 seconds."
+    except Exception as exc:
+        return f"Failed to run command: {exc}"
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+#  HELP — updated for Day 5
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def cmd_help(_args: str) -> str:
     """Lists all available commands with a short description."""
     lines = [
         "Here's everything I can do:\n",
-        "  ── Core ──────────────────────────────────────────────",
-        "  time                             → current time (with timezone)",
-        "  date                             → today's date",
-        "  hello / hi / hey                 → say hello",
-        "  about                            → about Jarvis",
-        "  status                           → full snapshot (OS + todos + reminders)",
-        "  sysinfo                          → CPU / RAM / disk usage",
+        "  -- Core -----------------------------------------------",
+        "  time                             -> current time (with timezone)",
+        "  date                             -> today's date",
+        "  hello / hi / hey                 -> say hello",
+        "  about                            -> about Jarvis",
+        "  status                           -> full snapshot (OS + todos + reminders)",
+        "  sysinfo                          -> CPU / RAM / disk usage",
         "",
-        "  ── 📋 Daily Routine (Day 4) ──────────────────────────",
-        "  morning summary                  → today's date, todos & reminders",
-        "  night summary                    → completed tasks + good night",
-        "  routine                          → your daily schedule",
+        "  -- Personalization (Day 5) ----------------------------",
+        "  set name <name>                  -> save your name",
+        "  get name                         -> read your stored name",
+        "  set preference <key> <value>     -> save a preference",
+        "  get preference <key>             -> read a preference",
+        "  my profile                       -> show name + all preferences",
         "",
-        "  ── ⏰ Reminders (Day 4) ──────────────────────────────",
-        "  remind me <time> <task>          → set a reminder",
-        "  list reminders                   → show pending reminders",
-        "  check reminders                  → alert if any are due",
-        "  clear reminder <#>               → dismiss a reminder",
+        "  -- AI (Day 5 upgraded) --------------------------------",
+        "  ask <question>                   -> smart AI answer (API or rule-based)",
+        "  chat                             -> enter interactive AI chat mode",
+        "  ai status                        -> show current AI configuration",
         "",
-        "  ── Quick Note (Day 2) ────────────────────────────────",
-        "  note <text>                      → timestamped quick note",
-        "  notes                            → show quick notes",
+        "  -- Shell (Day 5) --------------------------------------",
+        "  run <command>                    -> execute a shell command safely",
         "",
-        "  ── Notes (Day 3 — file per note) ────────────────────",
-        "  create note <title>              → create notes/<title>.txt",
-        "  write note <title> <content>     → append content to note",
-        "  list notes                       → list all note files",
-        "  open file <name>                 → open file in default app",
-        "  clear notes                      → delete all note files",
+        "  -- Daily Routine (Day 4) ------------------------------",
+        "  morning summary                  -> today's date, todos & reminders",
+        "  night summary                    -> completed tasks + good night",
+        "  routine                          -> your daily schedule",
         "",
-        "  ── Todos ─────────────────────────────────────────────",
-        "  create todo <task>               → add a task",
-        "  list todos                       → show all todos",
-        "  done todo <#>                    → mark a todo complete",
+        "  -- Reminders (Day 4) ----------------------------------",
+        "  remind me <time> <task>          -> set a reminder",
+        "  list reminders                   -> show pending reminders",
+        "  check reminders                  -> alert if any are due",
+        "  clear reminder <#>               -> dismiss a reminder",
         "",
-        "  ── Web & Apps ────────────────────────────────────────",
-        "  search <query>                   → Google search in browser",
-        "  open <app>                       → launch an app",
+        "  -- Quick Note (Day 2) ---------------------------------",
+        "  note <text>                      -> timestamped quick note",
+        "  notes                            -> show quick notes",
         "",
-        "  ── Fun ───────────────────────────────────────────────",
-        "  joke                             → random programmer joke",
-        "  quote                            → random motivational quote",
+        "  -- Notes (Day 3 - file per note) ----------------------",
+        "  create note <title>              -> create notes/<title>.txt",
+        "  write note <title> <content>     -> append content to note",
+        "  list notes                       -> list all note files",
+        "  open file <name>                 -> open file in default app",
+        "  clear notes                      -> delete all note files",
         "",
-        "  ── AI (optional) ─────────────────────────────────────",
-        "  ask <question>                   → ask the AI anything",
+        "  -- Todos ----------------------------------------------",
+        "  create todo <task>               -> add a task",
+        "  list todos                       -> show all todos",
+        "  done todo <#>                    -> mark a todo complete",
         "",
-        "  ── Control ───────────────────────────────────────────",
-        "  voice                            → toggle voice / text mode",
-        "  help                             → show this list",
-        "  exit / quit / bye / stop         → shut down Jarvis",
+        "  -- Web & Apps ----------------------------------------",
+        "  search <query>                   -> Google search in browser",
+        "  open <app>                       -> launch an app",
+        "",
+        "  -- Fun -----------------------------------------------",
+        "  joke                             -> random programmer joke",
+        "  quote                            -> random motivational quote",
+        "",
+        "  -- Control -------------------------------------------",
+        "  voice                            -> toggle voice / text mode",
+        "  help                             -> show this list",
+        "  exit / quit / bye / stop         -> shut down Jarvis",
     ]
     return "\n".join(lines)
 
@@ -953,6 +1050,49 @@ def _dispatch_night(args: str) -> str:
     return cmd_night_summary("")     # "night" alone also works
 
 
+def _dispatch_set(args: str) -> str:
+    """Routes 'set name …' or 'set preference <key> <value>'."""
+    parts = args.strip().split(maxsplit=1)
+    sub   = parts[0].lower() if parts else ""
+    rest  = parts[1] if len(parts) > 1 else ""
+
+    if sub == "name":
+        return cmd_set_name(rest)
+    if sub in ("preference", "pref"):
+        return cmd_set_preference(rest)
+    return "Did you mean 'set name <name>' or 'set preference <key> <value>'?"
+
+
+def _dispatch_get(args: str) -> str:
+    """Routes 'get name' or 'get preference <key>'."""
+    parts = args.strip().split(maxsplit=1)
+    sub   = parts[0].lower() if parts else ""
+    rest  = parts[1] if len(parts) > 1 else ""
+
+    if sub == "name":
+        return cmd_get_name(rest)
+    if sub in ("preference", "pref"):
+        return cmd_get_preference(rest)
+    return "Did you mean 'get name' or 'get preference <key>'?"
+
+
+def _dispatch_my(args: str) -> str:
+    """Routes 'my profile'."""
+    first = args.strip().lower().split()[0] if args.strip() else ""
+    if first == "profile":
+        return cmd_my_profile("")
+    return cmd_my_profile("")  # 'my' alone also shows profile
+
+
+def _dispatch_ai(args: str) -> str:
+    """Routes 'ai status'."""
+    first = args.strip().lower().split()[0] if args.strip() else ""
+    if first == "status":
+        return cmd_ai_status("")
+    # 'ai' alone: show AI status
+    return cmd_ai_status("")
+
+
 def _dispatch_remind(args: str) -> str:
     """Routes 'remind me <time> <task>'."""
     return cmd_remind(args)
@@ -980,7 +1120,7 @@ def _looks_like_search(text: str) -> bool:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 COMMAND_MAP: dict[str, callable] = {
-    # ── Day 1 ────────────────────────────────────────────────────────────────
+    # -- Day 1 ----------------------------------------------------------------
     "time":    cmd_time,
     "date":    cmd_date,
     "hello":   cmd_hello,
@@ -989,7 +1129,7 @@ COMMAND_MAP: dict[str, callable] = {
     "help":    cmd_help,
     "about":   cmd_about,
 
-    # ── Day 2 ────────────────────────────────────────────────────────────────
+    # -- Day 2 ----------------------------------------------------------------
     "search":  cmd_search,
     "open":    _dispatch_open,
     "note":    cmd_note,
@@ -997,7 +1137,7 @@ COMMAND_MAP: dict[str, callable] = {
     "joke":    cmd_joke,
     "voice":   cmd_voice,
 
-    # ── Day 3 ────────────────────────────────────────────────────────────────
+    # -- Day 3 ----------------------------------------------------------------
     "create":  _dispatch_create,
     "write":   _dispatch_write,
     "done":    _dispatch_done,
@@ -1005,16 +1145,25 @@ COMMAND_MAP: dict[str, callable] = {
     "quote":   cmd_quote,
     "ask":     cmd_ask,
 
-    # ── Day 4 ────────────────────────────────────────────────────────────────
-    "remind":   _dispatch_remind,
-    "reminder": _dispatch_remind,
+    # -- Day 4 ----------------------------------------------------------------
+    "remind":    _dispatch_remind,
+    "reminder":  _dispatch_remind,
     "reminders": cmd_list_reminders,
-    "routine":  cmd_routine,
-    "morning":  _dispatch_morning,
-    "night":    _dispatch_night,
-    "evening":  _dispatch_night,
+    "routine":   cmd_routine,
+    "morning":   _dispatch_morning,
+    "night":     _dispatch_night,
+    "evening":   _dispatch_night,
 
-    # ── Unified dispatchers (updated for Day 4) ───────────────────────────────
+    # -- Day 5 ----------------------------------------------------------------
+    "chat":      cmd_chat,
+    "run":       cmd_run,
+    "set":       _dispatch_set,
+    "get":       _dispatch_get,
+    "my":        _dispatch_my,
+    "profile":   cmd_my_profile,
+    "ai":        _dispatch_ai,
+
+    # -- Unified dispatchers (updated for Day 5) ------------------------------
     "list":    _dispatch_list,
     "clear":   _dispatch_clear,
     "check":   _dispatch_check,
@@ -1030,7 +1179,8 @@ def handle_command(user_input: str, speak_fn=None) -> str:
     """
     Parses user input, routes it to the correct handler, and returns the
     response string. Optionally calls speak_fn(response) for TTS output.
-    Also runs context-aware checks (e.g., "I'm busy" → show todos).
+    Also runs context-aware checks (e.g., 'I'm busy' -> show todos).
+    Day 5: handles the __CHAT_MODE__ sentinel from cmd_chat().
     """
     # Context-aware check first
     ctx = _handle_busy(user_input)
@@ -1049,22 +1199,18 @@ def handle_command(user_input: str, speak_fn=None) -> str:
 
     if handler:
         response = handler(args)
+        # Handle chat mode sentinel
+        if response == "__CHAT_MODE__":
+            ai_engine.chat_session(speak_fn)
+            return "Chat session ended."
     elif _looks_like_search(user_input):
-        response = (
-            f"I don't know that command, but it sounds like a question.\n"
-            f"  Searching Google for '{user_input}'…"
-        )
-        try:
-            webbrowser.open(
-                f"https://www.google.com/search?q={user_input.replace(' ', '+')}"
-            )
-        except Exception:
-            pass
+        # Unknown input that looks like a question -> try AI first
+        response = ai_engine.ask_ai(user_input)
     else:
         response = (
             f"I don't understand '{user_input}' yet.\n"
-            f"  → Try: search {user_input}\n"
-            f"  → Or type 'help' to see all commands."
+            f"  -> Try: ask {user_input}\n"
+            f"  -> Or type 'help' to see all commands."
         )
 
     if speak_fn:

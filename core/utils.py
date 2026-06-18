@@ -23,7 +23,7 @@ JARVIS_BANNER = r"""
                V E R Y   I N T E L L I G E N T
                       S Y S T E M
 
-                     [ Day 4 — v0.4 ]
+                     [ Day 5 -- v0.5 ]
   ══════════════════════════════════════════════════════
 """
 
@@ -35,16 +35,14 @@ def display_banner() -> None:
 
 def startup_capabilities() -> None:
     """Prints a concise 'what can I do?' teaser on startup."""
-    print("  ┌─ What can I do? ──────────────────────────────────────┐")
-    print("  │  ⏰  remind me <time> <task>  •  list reminders       │")
-    print("  │  🌅  morning summary          •  night summary        │")
-    print("  │  📋  routine                  •  status               │")
-    print("  │  📝  create note / write note / list notes            │")
-    print("  │  ✅  create todo / list todos / done todo             │")
-    print("  │  🔍  search <query>  •  ask <question> (AI)          │")
-    print("  │  💻  open <app>  •  sysinfo                          │")
-    print("  │  😂  joke  •  💡 quote  •  help (full list)          │")
-    print("  └──────────────────────────────────────────────────────-┘")
+    print("  +- What can I do? -----------------------------------------------+")
+    print("  |  set name <name>    my profile    set preference <key> <value>  |")
+    print("  |  ask <question>     chat          ai status                     |")
+    print("  |  run <command>      remind me <time> <task>                     |")
+    print("  |  morning summary    night summary   routine    status           |")
+    print("  |  create note/todo   list notes/todos   search   open <app>     |")
+    print("  |  joke   quote   sysinfo   help (full list)                     |")
+    print("  +----------------------------------------------------------------+")
     print()
 
 

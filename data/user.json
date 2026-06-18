@@ -1,0 +1,10 @@
+{
+  "name": "Pandu",
+  "preferences": {
+    "theme": "dark",
+    "language": "English",
+    "preferred_browser": "chrome",
+    "preferred_editor": "vscode",
+    "ai_tone": "friendly"
+  }
+}

@@ -8,8 +8,8 @@ Edit this file to customise behaviour without touching core logic.
 import os
 
 # ─── Version ─────────────────────────────────────────────────────────────────
-VERSION = "0.4"
-DAY     = "Day 4"
+VERSION = "0.5"
+DAY     = "Day 5"
 
 # ─── Voice Mode ──────────────────────────────────────────────────────────────
 # Set to True to enable microphone input + TTS output.
@@ -30,6 +30,9 @@ TODOS_FILE = os.path.join(_BASE, "data", "todos.json")
 
 # Day 4: reminders stored as JSON
 REMINDERS_FILE = os.path.join(_BASE, "data", "reminders.json")
+
+# Day 5: personalization profile stored as JSON
+USER_FILE = os.path.join(_BASE, "data", "user.json")
 
 # ─── Apps ────────────────────────────────────────────────────────────────────
 # Maps short names → executable / command used to launch apps.
@@ -83,11 +86,26 @@ NIGHT_MESSAGES: list[str] = [
 # Set your API key here OR create a .env file with the key (recommended).
 # Jarvis will load .env automatically if python-dotenv is installed.
 #
-# Supported providers: "gemini" | "openai" | "" (disabled)
-AI_PROVIDER = ""          # e.g. "gemini"
+# Supported providers: "gemini" | "openai" | "" (rule-based fallback only)
+AI_PROVIDER = ""          # e.g. "gemini" or "openai"
+
+# Optional: override the default model for the chosen provider.
+# Leave empty to use the built-in default (gemini-1.5-flash / gpt-4o-mini).
+AI_MODEL = ""             # e.g. "gemini-1.5-pro" or "gpt-4o"
 
 GEMINI_API_KEY  = os.getenv("GEMINI_API_KEY",  "")
 OPENAI_API_KEY  = os.getenv("OPENAI_API_KEY",  "")
+
+# ─── Shell Command Safety (Day 5) ────────────────────────────────────────────
+# Commands that start with any of these tokens are blocked by 'run <cmd>'.
+BLOCKED_COMMANDS: list[str] = [
+    "rm", "del", "rmdir", "rd", "format", "mkfs",
+    "shutdown", "reboot", "poweroff", "halt",
+    "dd", "fdisk", "diskpart",
+    "curl", "wget",           # no silent downloads
+    "reg", "regedit",         # no registry edits
+    "net user", "net localgroup",
+]
 
 # ─── Jokes ───────────────────────────────────────────────────────────────────
 JOKES: list[str] = [

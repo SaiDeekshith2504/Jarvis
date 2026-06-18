@@ -1,22 +1,25 @@
 # Jarvis Dependencies
 # Install with: pip install -r requirements.txt
 
-# ── Day 2 (voice + utilities) ─────────────────────────────────────────────────
+# -- Day 2 (voice + utilities) -------------------------------------------------
 pyttsx3            # offline text-to-speech (no internet needed)
 SpeechRecognition  # voice input via microphone
 pyaudio            # microphone driver (required by SpeechRecognition)
                    # Windows: pip install pyaudio
                    # If pyaudio fails: pip install pipwin && pipwin install pyaudio
 
-# ── Day 3 (automation + AI) ───────────────────────────────────────────────────
+# -- Day 3 (automation + utilities) -------------------------------------------
 psutil             # CPU / RAM / disk stats (sysinfo command)
 requests           # HTTP calls (future: REST APIs)
 python-dotenv      # load API keys from .env file
 
-# ── Day 4 (scheduling + reminders) ───────────────────────────────────────────
-# No new external dependencies — Day 4 uses only the Python standard library
+# -- Day 4 (scheduling + reminders) -------------------------------------------
+# No new external dependencies -- uses only Python standard library
 # (datetime, json, os, re) for the reminder engine.
 
-# ── Day 3 AI (optional — install whichever you use) ───────────────────────────
-# google-generativeai   # Gemini API  →  pip install google-generativeai
-# openai                # OpenAI API  →  pip install openai
+# -- Day 5 (AI + personalization) ---------------------------------------------
+# No mandatory new packages.  Install whichever AI provider you use:
+# google-generativeai   # Gemini API  ->  pip install google-generativeai
+# openai                # OpenAI API  ->  pip install openai
+#
+# If neither is installed, Jarvis falls back to the built-in rule-based AI.
