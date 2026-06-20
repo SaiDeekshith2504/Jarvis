@@ -1,7 +1,7 @@
 # Jarvis -- Personal AI Assistant
 
 > A modular Python personal assistant, built to grow.
-> **Day 5: AI-Powered, Personalized, Shell-Integrated.**
+> **Day 6: GUI, Browser Automation, Logging, and Improved UX.**
 
 ---
 
@@ -9,17 +9,20 @@
 
 ```
 Jarvis/
-├── main.py                  # Entry point -- run this to start Jarvis
-├── config.py                # All settings: paths, apps, AI, routine, messages
+├── main.py                  # Entry point (CLI or GUI via --gui flag / config)
+├── gui.py                   # ★ Day 6 -- Tkinter desktop GUI
+├── config.py                # All settings: paths, apps, AI, UI mode, routine
 ├── requirements.txt         # All dependencies
 ├── .env.example             # Copy to .env and add your API keys
 │
 ├── core/
 │   ├── __init__.py
-│   ├── assistant.py         # Main loop: startup, input, routing, shutdown
+│   ├── assistant.py         # Main CLI loop: startup, input, routing, shutdown
 │   ├── commands.py          # All command handlers + command registry
-│   ├── ai.py                # ★ Day 5 -- AI engine (Gemini/OpenAI + rule-based fallback)
-│   ├── user_profile.py      # ★ Day 5 -- Personalization & memory (data/user.json)
+│   ├── ai.py                # Day 5 -- AI engine (Gemini/OpenAI + rule-based)
+│   ├── user_profile.py      # Day 5 -- Personalization & memory (data/user.json)
+│   ├── browser.py           # ★ Day 6 -- Browser automation (webbrowser module)
+│   ├── logger.py            # ★ Day 6 -- Interaction logger (data/jarvis_log.json)
 │   ├── reminders.py         # Day 4 -- Reminder engine (add/list/check/clear)
 │   ├── greeting.py          # Time-aware, name-aware greeting
 │   ├── voice.py             # TTS + microphone input
@@ -29,7 +32,8 @@ Jarvis/
 │   ├── notes.txt            # Day 2 quick notes (append-only)
 │   ├── todos.json           # Day 3 structured todo list
 │   ├── reminders.json       # Day 4 scheduled reminders
-│   ├── user.json            # ★ Day 5 personalization profile (name + preferences)
+│   ├── user.json            # Day 5 personalization profile (name + preferences)
+│   ├── jarvis_log.json      # ★ Day 6 interaction log
 │   └── notes/               # Day 3 per-title note files
 │
 └── tests/
@@ -53,39 +57,67 @@ cp .env.example .env
 # Edit .env: add GEMINI_API_KEY=... or OPENAI_API_KEY=...
 # Edit config.py: set AI_PROVIDER = "gemini"  (or "openai")
 
-# 4. Start Jarvis
+# 4a. Start Jarvis in CLI mode (default)
 python main.py
+
+# 4b. Start Jarvis in GUI mode
+python main.py --gui
+# or:
+python gui.py
 ```
+
+### Choosing UI Mode
+
+| Method | Description |
+|---|---|
+| `python main.py` | CLI mode (respects `UI_MODE` in `config.py`) |
+| `python main.py --gui` | Force tkinter GUI window |
+| `python main.py --cli` | Force CLI mode |
+| `python gui.py` | Launch GUI directly |
+
+Set `UI_MODE = "gui"` in `config.py` to always open the GUI.
 
 ---
 
-## Day 5 -- New Commands
+## Day 6 -- New Features
 
-### Personalization
+### 🖥️ Tkinter GUI (`gui.py`)
+- Dark-themed chat-style window (electric violet + navy color scheme)
+- Scrollable output with color-coded user/Jarvis messages + timestamps
+- `↑`/`↓` arrow keys navigate your input history
+- **Voice** button toggles microphone input (if audio libs are installed)
+- **Clear** resets the chat view without closing Jarvis
+- Background reminder ticker (checks every 30 seconds, alerts in the UI)
+- Threaded command processing (UI never freezes during AI/file operations)
+
+### 🌐 Browser Automation (`core/browser.py`)
 | Command | What it does |
 |---|---|
-| `set name Pandu` | Save your preferred name (persisted in data/user.json) |
-| `get name` | Read your stored name |
-| `set preference theme dark` | Save any preference as key-value |
-| `get preference theme` | Read a stored preference |
-| `my profile` | Show your full profile (name + all preferences) |
+| `open url <url>` | Open any URL in the default browser |
+| `open google <query>` | Google search |
+| `open youtube <query>` | YouTube search |
+| `open github <query>` | GitHub code search |
+| `open maps <location>` | Google Maps |
+| `open wikipedia <query>` | Wikipedia search |
+| `open reddit <query>` | Reddit search |
 
-### AI Integration
+### 📋 Interaction Logging (`core/logger.py`)
 | Command | What it does |
 |---|---|
-| `ask <question>` | Smart AI answer: calls Gemini/OpenAI or rule-based fallback |
-| `chat` | Enter interactive AI chat mode (type `back` to exit) |
-| `ai status` | Show current AI provider configuration |
+| `show history` | Show last 15 interactions (timestamp, input, response) |
+| `show history 25` | Show last 25 interactions |
+| `clear history` | Wipe the log file |
 
-### Shell Execution
+Every command is automatically logged to `data/jarvis_log.json` with:
+- Timestamp
+- User input
+- Jarvis response
+- Command type
+
+### 💡 Tips
 | Command | What it does |
 |---|---|
-| `run echo hello` | Run a shell command and show output |
-| `run python --version` | Check Python version |
-| `run dir` | List current directory |
-
-> **Safety**: Dangerous commands (`del`, `rm`, `shutdown`, etc.) are blocked.
-> Edit `BLOCKED_COMMANDS` in `config.py` to customize.
+| `tips` | Show 10 helpful usage tips for Jarvis |
 
 ---
 
@@ -111,6 +143,11 @@ python main.py
 | `set name <name>` | `get name` | `set preference <key> <value>` | `get preference <key>` | `my profile` |
 | `run <command>` |
 
+### GUI, Browser, Logging (Day 6)
+| `open url <url>` | `open google <q>` | `open youtube <q>` | `open github <q>` |
+| `open maps <loc>` | `open wikipedia <q>` | `open reddit <q>` |
+| `show history [n]` | `clear history` | `tips` |
+
 ---
 
 ## AI Configuration (config.py + .env)
@@ -119,6 +156,7 @@ python main.py
 # config.py
 AI_PROVIDER = "gemini"        # "gemini" | "openai" | "" (rule-based fallback)
 AI_MODEL    = ""              # optional override, e.g. "gemini-1.5-pro"
+UI_MODE     = "cli"           # "cli" | "gui"
 ```
 
 ```bash
@@ -157,19 +195,25 @@ Auto-created on first run with defaults. Edit manually or via commands:
 ## Configuration (config.py)
 
 ```python
-VOICE_ENABLED = True          # False for text-only mode
-AI_PROVIDER   = "gemini"      # AI provider
-AI_MODEL      = ""            # Override default model
-BLOCKED_COMMANDS = [...]      # Shell commands to block for safety
+VOICE_ENABLED    = True          # False for text-only mode
+AI_PROVIDER      = "gemini"      # AI provider
+AI_MODEL         = ""            # Override default model
+UI_MODE          = "cli"         # "cli" or "gui"
+BLOCKED_COMMANDS = [...]         # Shell commands to block for safety
 
-APP_MAP = {                   # Apps for 'open <name>'
+APP_MAP = {                      # Apps for 'open <name>'
     "vscode": "code .",
     "browser": "start chrome",
     ...
 }
 
-DAILY_ROUTINE = [             # Your personal schedule for 'routine'
+DAILY_ROUTINE = [                # Your personal schedule for 'routine'
     "06:30  Wake up",
+    ...
+]
+
+TIPS = [                         # Tips shown by the 'tips' command
+    "💡 Type 'morning summary' first thing...",
     ...
 ]
 ```
@@ -209,21 +253,22 @@ COMMAND_MAP["mycommand"] = cmd_mycommand
 | Day 2 | Voice & I/O | TTS, microphone, search, notes, open apps |
 | Day 3 | Automation | File notes, todos, sysinfo, AI (ask), quotes |
 | Day 4 | Productivity | Reminders, morning/night summary, routine, enhanced status |
-| **Day 5** | **AI + Personalization** | **AI engine (Gemini/OpenAI/rule-based), user profile, chat mode, shell run** |
+| Day 5 | AI + Personalization | AI engine (Gemini/OpenAI/rule-based), user profile, chat mode, shell run |
+| **Day 6** | **GUI + Browser + Logging** | **tkinter GUI, browser automation (7 targets), interaction logger, tips, improved UX** |
 
 ---
 
-## Day 6+ Ideas
+## Day 7+ Ideas
 
 | Feature | Description |
 |---|---|
-| 🌤️ **Weather** | Live weather in morning summary (OpenWeatherMap API) |
-| 📆 **Calendar Integration** | Sync with Google Calendar events |
-| 🌐 **Browser Automation** | Open URLs, fill forms via Playwright/Selenium |
-| 💻 **VS Code Integration** | Open files, run tasks from Jarvis |
+| 📆 **Calendar Integration** | Sync with Google Calendar / remind from calendar events |
+| 💻 **VS Code Integration** | Open specific files, run tasks directly from Jarvis |
+| 🌤️ **Live Weather** | OpenWeatherMap API in morning summary |
+| 🤖 **Advanced AI Behaviors** | System prompt with persona, memory across sessions |
 | 📊 **Productivity Stats** | Weekly report: todos done, reminders hit, commands used |
-| 🔔 **Desktop Notifications** | System tray pop-ups for overdue reminders |
-| 🎭 **Personality Modes** | Switch between formal, casual, and motivator tones |
-| 🖥️ **GUI / Web Interface** | Tkinter or Flask-based visual dashboard |
-| 🔌 **Plugin System** | Load new command sets from external Python files |
-| 💾 **Conversation History** | Multi-turn AI chat with memory across sessions |
+| 🔔 **Desktop Notifications** | System tray / Windows toast notifications for reminders |
+| 🎭 **Personality Modes** | Switch between formal, casual, motivator, and tutor tones |
+| 🔌 **Plugin System** | Load new command packs from external Python files |
+| 📱 **Mobile Companion App** | Simple React Native / Flutter app talking to a local Jarvis server |
+| 🌐 **Full Web UI (Flask)** | Full web dashboard with history chart, stats, and remote access |
