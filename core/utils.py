@@ -6,25 +6,18 @@ Shared helpers used across Jarvis modules.
 Day 2: Banner updated to v0.2; get_input() supports voice fallback.
 Day 3: Banner updated to v0.3; startup_capabilities() added.
 Day 4: Banner updated to v0.4; startup_capabilities() shows Day 4 features.
+Day 6: Banner bumped to v0.6; startup_capabilities() shows Day 6 features.
 """
 
 import sys
 
 
 JARVIS_BANNER = r"""
-  ══════════════════════════════════════════════════════
-    ░░░░░░  ░░░░░░  ░░░░░  ░░   ░░  ░░░░░░  ░░░░░░
-         ░░ ░░  ░░ ░░  ░░  ░░  ░░   ░░      ░░
-     ░░░░░  ░░░░░  ░░░░░░  ░░░░░░   ░░░░░   ░░░░░░
-         ░░ ░░  ░░ ░░  ░░  ░░  ░░   ░░           ░░
-    ░░░░░░  ░░  ░░ ░░  ░░  ░░   ░░  ░░░░░░  ░░░░░░
+  ======================================================
+    JARVIS -- Just A Rather Very Intelligent System
 
-                J U S T   A   R A T H E R
-               V E R Y   I N T E L L I G E N T
-                      S Y S T E M
-
-                     [ Day 5 -- v0.5 ]
-  ══════════════════════════════════════════════════════
+                   [ Day 6 -- v0.6 ]
+  ======================================================
 """
 
 
@@ -35,13 +28,15 @@ def display_banner() -> None:
 
 def startup_capabilities() -> None:
     """Prints a concise 'what can I do?' teaser on startup."""
-    print("  +- What can I do? -----------------------------------------------+")
-    print("  |  set name <name>    my profile    set preference <key> <value>  |")
-    print("  |  ask <question>     chat          ai status                     |")
-    print("  |  run <command>      remind me <time> <task>                     |")
-    print("  |  morning summary    night summary   routine    status           |")
-    print("  |  create note/todo   list notes/todos   search   open <app>     |")
-    print("  |  joke   quote   sysinfo   help (full list)                     |")
+    print("  +- What can I do? (Day 6) ---------------------------------------+")
+    print("  |  open google/youtube/github/maps <query>  (browser search)   |")
+    print("  |  show history   clear history   tips                          |")
+    print("  |  set name <name>   my profile   set preference <key> <value>  |")
+    print("  |  ask <question>    chat          ai status                    |")
+    print("  |  run <command>     remind me <time> <task>                    |")
+    print("  |  morning summary   night summary   routine    status          |")
+    print("  |  create note/todo  list notes/todos  search   open <app>      |")
+    print("  |  joke   quote   sysinfo   help (full list)                    |")
     print("  +----------------------------------------------------------------+")
     print()
 

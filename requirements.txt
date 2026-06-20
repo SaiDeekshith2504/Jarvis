@@ -23,3 +23,11 @@ python-dotenv      # load API keys from .env file
 # openai                # OpenAI API  ->  pip install openai
 #
 # If neither is installed, Jarvis falls back to the built-in rule-based AI.
+
+# -- Day 6 (GUI + browser + logging) ------------------------------------------
+# tkinter is built into Python (no pip needed — already included in Python 3.x)
+# webbrowser is part of the Python standard library (no install needed)
+# No new mandatory packages for Day 6.
+#
+# Optional: install pyinstaller to bundle Jarvis as a standalone .exe:
+# pyinstaller          ->  pip install pyinstaller

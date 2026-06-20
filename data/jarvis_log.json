@@ -1,0 +1,8 @@
+[
+  {
+    "timestamp": "2026-06-20 22:01:51",
+    "user_input": "tips",
+    "response": "── 💡  Jarvis Tips ─────────────────────────────────────\n  [1]  💡 Type 'morning summary' first thing to see your todos & reminders for the day.\n  [2]  💡 Use 'open google <query>' or 'open youtube <query>' for quick browser searches.\n  [3]  💡 'show history' lets you review your last 15 conversations with Jarvis.\n  [4]  💡 Try 'ask <anything>' — Jarvis can answer questions using AI.\n  [5]  💡 Set your name with 'set name <name>' so Jarvis can greet you personally.\n  [6]  💡 'remind me in 30 minutes <task>' sets a quick countdown reminder.\n  [7]  💡 Use 'chat' to enter full AI conversation mode without typing 'ask' each time.\n  [8]  💡 'sysinfo' shows real-time CPU, RAM and disk usage.\n  [9]  💡 Run any safe shell command with 'run <command>' (e.g. run echo hello).\n  [10]  💡 Open 'gui.py' directly to launch Jarvis in the desktop GUI window.\n────────────────────────────────────────────────────────\n  More commands: type 'help' for the full list.",
+    "command_type": "tips"
+  }
+]

@@ -15,6 +15,8 @@ Day 4: remind me, list reminders, check reminders, clear reminder,
 Day 5: ask (upgraded to ai.py), chat mode,
        set name, get name, set preference, get preference,
        my profile, ai status, run <shell command>  (+ Day 1-4 preserved)
+Day 6: open url/google/youtube/github/maps/wikipedia/reddit (browser automation),
+       show history, clear history, tips           (+ Day 1-5 preserved)
 """
 
 from __future__ import annotations
@@ -29,10 +31,13 @@ import config
 from config import (
     APP_MAP, JOKES, NOTES_FILE, NOTES_DIR, TODOS_FILE, QUOTES,
     DAILY_ROUTINE, MORNING_MESSAGES, NIGHT_MESSAGES, BLOCKED_COMMANDS,
+    TIPS,
 )
 from core import reminders as rem_engine
 from core import ai as ai_engine
 from core import user_profile as profile_engine
+from core import browser as browser_engine
+from core import logger as log_engine
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -458,9 +463,9 @@ def cmd_ask(args: str) -> str:
     Sends a question to the configured AI provider (Gemini or OpenAI).
     Usage: ask <your question>
     """
-    # Delegate entirely to the dedicated AI module (Day 5)
-    from core.ai import ask_ai
-    return ask_ai(question)
+    if not args.strip():
+        return "What would you like to ask? Usage: ask <your question>"
+    return ai_engine.ask_ai(args)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -713,6 +718,78 @@ def cmd_routine(_args: str) -> str:
     return "\n".join(lines)
 
 
+# ═══════════════════════════════════════════════════════════════════════════════
+#  DAY 6 — NEW COMMANDS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# ── Browser Automation ───────────────────────────────────────────────────────
+
+def cmd_open_url(args: str) -> str:
+    """Opens a URL in the default browser. Usage: open url <url>"""
+    return browser_engine.open_url(args)
+
+
+def cmd_open_google(args: str) -> str:
+    """Opens a Google search. Usage: open google <query>"""
+    return browser_engine.open_google(args)
+
+
+def cmd_open_youtube(args: str) -> str:
+    """Opens a YouTube search. Usage: open youtube <query>"""
+    return browser_engine.open_youtube(args)
+
+
+def cmd_open_github(args: str) -> str:
+    """Opens a GitHub code search. Usage: open github <query>"""
+    return browser_engine.open_github(args)
+
+
+def cmd_open_maps(args: str) -> str:
+    """Opens a Google Maps search. Usage: open maps <location>"""
+    return browser_engine.open_maps(args)
+
+
+def cmd_open_wikipedia(args: str) -> str:
+    """Opens Wikipedia search. Usage: open wikipedia <query>"""
+    return browser_engine.open_wikipedia(args)
+
+
+def cmd_open_reddit(args: str) -> str:
+    """Opens a Reddit search. Usage: open reddit <query>"""
+    return browser_engine.open_reddit(args)
+
+
+# ── History / Logging ────────────────────────────────────────────────────────
+
+def cmd_show_history(args: str) -> str:
+    """
+    Shows the last 15 (or N) logged interactions.
+    Usage: show history        (last 15)
+           show history 25     (last 25)
+    """
+    n = 15
+    if args.strip().isdigit():
+        n = int(args.strip())
+    return log_engine.show_history(n)
+
+
+def cmd_clear_history_cmd(_args: str) -> str:
+    """Clears all interaction history. Usage: clear history"""
+    return log_engine.clear_history()
+
+
+# ── Tips ─────────────────────────────────────────────────────────────────────
+
+def cmd_tips(_args: str) -> str:
+    """Shows helpful tips for using Jarvis. Usage: tips"""
+    lines = ["── 💡  Jarvis Tips ─────────────────────────────────────"]
+    for i, tip in enumerate(TIPS, 1):
+        lines.append(f"  [{i}]  {tip}")
+    lines.append("────────────────────────────────────────────────────────")
+    lines.append("  More commands: type 'help' for the full list.")
+    return "\n".join(lines)
+
+
 # ─── Context-aware responses ─────────────────────────────────────────────────
 
 def _handle_busy(user_input: str) -> str | None:
@@ -907,6 +984,22 @@ def cmd_help(_args: str) -> str:
         "  -- Shell (Day 5) --------------------------------------",
         "  run <command>                    -> execute a shell command safely",
         "",
+        "  -- Browser Automation (Day 6) -------------------------",
+        "  open url <url>                   -> open any URL in the browser",
+        "  open google <query>              -> Google search",
+        "  open youtube <query>             -> YouTube search",
+        "  open github <query>              -> GitHub code search",
+        "  open maps <location>             -> Google Maps",
+        "  open wikipedia <query>           -> Wikipedia search",
+        "  open reddit <query>              -> Reddit search",
+        "",
+        "  -- History & Logging (Day 6) --------------------------",
+        "  show history [n]                 -> last 15 (or n) interactions",
+        "  clear history                    -> wipe the log",
+        "",
+        "  -- Tips & Help (Day 6) --------------------------------",
+        "  tips                             -> helpful usage tips",
+        "",
         "  -- Daily Routine (Day 4) ------------------------------",
         "  morning summary                  -> today's date, todos & reminders",
         "  night summary                    -> completed tasks + good night",
@@ -955,13 +1048,20 @@ def cmd_help(_args: str) -> str:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def _dispatch_open(args: str) -> str:
-    """Routes 'open file …' → cmd_open_file, else → cmd_open (app launcher)."""
+    """Routes 'open file|url|google|youtube|github|maps|wikipedia|reddit …' → specialist,
+    else → cmd_open (app launcher)."""
     parts = args.strip().split(maxsplit=1)
     sub   = parts[0].lower() if parts else ""
     rest  = parts[1] if len(parts) > 1 else ""
 
-    if sub == "file":
-        return cmd_open_file(rest)
+    if sub == "file":      return cmd_open_file(rest)
+    if sub == "url":       return cmd_open_url(rest)
+    if sub == "google":    return cmd_open_google(rest)
+    if sub == "youtube":   return cmd_open_youtube(rest)
+    if sub == "github":    return cmd_open_github(rest)
+    if sub == "maps":      return cmd_open_maps(rest)
+    if sub == "wikipedia": return cmd_open_wikipedia(rest)
+    if sub == "reddit":    return cmd_open_reddit(rest)
     return cmd_open(args)
 
 
@@ -1014,16 +1114,16 @@ def _dispatch_done(args: str) -> str:
 
 
 def _dispatch_clear(args: str) -> str:
-    """Routes 'clear notes' or 'clear reminder <#>'."""
+    """Routes 'clear notes', 'clear reminder <#>', or 'clear history'."""
     parts = args.strip().lower().split(maxsplit=1)
     first = parts[0] if parts else ""
     rest  = parts[1] if len(parts) > 1 else ""
 
-    if first == "notes":
-        return cmd_clear_notes("")
-    if first in ("reminder", "reminders"):
-        return cmd_clear_reminder(rest)
-    return "Did you mean 'clear notes' or 'clear reminder <#>'?"
+    if first == "notes":             return cmd_clear_notes("")
+    if first in ("reminder",
+                 "reminders"):       return cmd_clear_reminder(rest)
+    if first == "history":           return cmd_clear_history_cmd("")
+    return "Did you mean 'clear notes', 'clear reminder <#>', or 'clear history'?"
 
 
 def _dispatch_check(args: str) -> str:
@@ -1098,6 +1198,16 @@ def _dispatch_remind(args: str) -> str:
     return cmd_remind(args)
 
 
+def _dispatch_show(args: str) -> str:
+    """Routes 'show history [n]'."""
+    parts = args.strip().split(maxsplit=1)
+    first = parts[0].lower() if parts else ""
+    n_str = parts[1] if len(parts) > 1 else ""
+    if first == "history":
+        return cmd_show_history(n_str)
+    return f"Did you mean 'show history'? (Unknown: show {args})"
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
 #  SMART FALLBACK — auto-search natural-language input
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -1163,7 +1273,12 @@ COMMAND_MAP: dict[str, callable] = {
     "profile":   cmd_my_profile,
     "ai":        _dispatch_ai,
 
-    # -- Unified dispatchers (updated for Day 5) ------------------------------
+    # -- Day 6 ----------------------------------------------------------------
+    "tips":      cmd_tips,
+    "show":      _dispatch_show,
+    "history":   cmd_show_history,
+
+    # -- Unified dispatchers (updated for Day 6) ------------------------------
     "list":    _dispatch_list,
     "clear":   _dispatch_clear,
     "check":   _dispatch_check,
@@ -1181,6 +1296,7 @@ def handle_command(user_input: str, speak_fn=None) -> str:
     response string. Optionally calls speak_fn(response) for TTS output.
     Also runs context-aware checks (e.g., 'I'm busy' -> show todos).
     Day 5: handles the __CHAT_MODE__ sentinel from cmd_chat().
+    Day 6: logs every interaction via logger.py.
     """
     # Context-aware check first
     ctx = _handle_busy(user_input)
@@ -1189,6 +1305,7 @@ def handle_command(user_input: str, speak_fn=None) -> str:
             speak_fn(ctx)
         else:
             print(f"\n  [Jarvis] {ctx}\n")
+        log_engine.log_interaction(user_input, ctx, "context")
         return ctx
 
     parts   = user_input.strip().split(maxsplit=1)
@@ -1202,7 +1319,7 @@ def handle_command(user_input: str, speak_fn=None) -> str:
         # Handle chat mode sentinel
         if response == "__CHAT_MODE__":
             ai_engine.chat_session(speak_fn)
-            return "Chat session ended."
+            response = "Chat session ended."
     elif _looks_like_search(user_input):
         # Unknown input that looks like a question -> try AI first
         response = ai_engine.ask_ai(user_input)
@@ -1210,8 +1327,13 @@ def handle_command(user_input: str, speak_fn=None) -> str:
         response = (
             f"I don't understand '{user_input}' yet.\n"
             f"  -> Try: ask {user_input}\n"
-            f"  -> Or type 'help' to see all commands."
+            f"  -> Or type 'help' to see all commands.\n"
+            f"  -> Tip: type 'tips' for quick usage hints."
         )
+
+    # ── Log every interaction ────────────────────────────────────────────────
+    cmd_type = keyword if handler else ("ai" if _looks_like_search(user_input) else "unknown")
+    log_engine.log_interaction(user_input, response, cmd_type)
 
     if speak_fn:
         speak_fn(response)

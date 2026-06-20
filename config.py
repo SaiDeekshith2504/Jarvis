@@ -8,8 +8,8 @@ Edit this file to customise behaviour without touching core logic.
 import os
 
 # ─── Version ─────────────────────────────────────────────────────────────────
-VERSION = "0.5"
-DAY     = "Day 5"
+VERSION = "0.6"
+DAY     = "Day 6"
 
 # ─── Voice Mode ──────────────────────────────────────────────────────────────
 # Set to True to enable microphone input + TTS output.
@@ -33,6 +33,9 @@ REMINDERS_FILE = os.path.join(_BASE, "data", "reminders.json")
 
 # Day 5: personalization profile stored as JSON
 USER_FILE = os.path.join(_BASE, "data", "user.json")
+
+# Day 6: interaction log stored as JSON
+LOG_FILE = os.path.join(_BASE, "data", "jarvis_log.json")
 
 # ─── Apps ────────────────────────────────────────────────────────────────────
 # Maps short names → executable / command used to launch apps.
@@ -82,6 +85,12 @@ NIGHT_MESSAGES: list[str] = [
     "Today's effort is tomorrow's progress. Sleep well! ⭐",
 ]
 
+# ─── UI Mode (Day 6) ─────────────────────────────────────────────────────────
+# "cli"  → classic terminal loop (default)
+# "gui"  → tkinter desktop window
+# "web"  → Flask web UI (run web_ui.py)
+UI_MODE = "cli"
+
 # ─── AI Integration (Optional) ───────────────────────────────────────────────
 # Set your API key here OR create a .env file with the key (recommended).
 # Jarvis will load .env automatically if python-dotenv is installed.
@@ -119,6 +128,20 @@ JOKES: list[str] = [
     "Debugging: being the detective in a crime movie where you're also the murderer.",
     "How many programmers does it take to change a light bulb? None — that's a hardware problem.",
     "I would tell you a UDP joke, but you might not get it.",
+]
+
+# ─── Jarvis Tips (Day 6) ─────────────────────────────────────────────────────
+TIPS: list[str] = [
+    "💡 Type 'morning summary' first thing to see your todos & reminders for the day.",
+    "💡 Use 'open google <query>' or 'open youtube <query>' for quick browser searches.",
+    "💡 'show history' lets you review your last 15 conversations with Jarvis.",
+    "💡 Try 'ask <anything>' — Jarvis can answer questions using AI.",
+    "💡 Set your name with 'set name <name>' so Jarvis can greet you personally.",
+    "💡 'remind me in 30 minutes <task>' sets a quick countdown reminder.",
+    "💡 Use 'chat' to enter full AI conversation mode without typing 'ask' each time.",
+    "💡 'sysinfo' shows real-time CPU, RAM and disk usage.",
+    "💡 Run any safe shell command with 'run <command>' (e.g. run echo hello).",
+    "💡 Open 'gui.py' directly to launch Jarvis in the desktop GUI window.",
 ]
 
 # ─── Quotes ──────────────────────────────────────────────────────────────────
