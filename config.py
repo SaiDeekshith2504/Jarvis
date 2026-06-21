@@ -7,9 +7,9 @@ Edit this file to customise behaviour without touching core logic.
 
 import os
 
-# ─── Version ─────────────────────────────────────────────────────────────────
-VERSION = "0.6"
-DAY     = "Day 6"
+# --- Version ----------------------------------------------------------------
+VERSION = "0.7"
+DAY     = "Day 7"
 
 # ─── Voice Mode ──────────────────────────────────────────────────────────────
 # Set to True to enable microphone input + TTS output.
@@ -37,8 +37,11 @@ USER_FILE = os.path.join(_BASE, "data", "user.json")
 # Day 6: interaction log stored as JSON
 LOG_FILE = os.path.join(_BASE, "data", "jarvis_log.json")
 
-# ─── Apps ────────────────────────────────────────────────────────────────────
-# Maps short names → executable / command used to launch apps.
+# Day 7: structured command log
+COMMAND_LOG_FILE = os.path.join(_BASE, "data", "command_logs.json")
+
+# --- Apps -------------------------------------------------------------------
+# Maps short names -> executable / command used to launch apps.
 APP_MAP: dict[str, str] = {
     "notepad":    "notepad",
     "calculator": "calc",
@@ -47,6 +50,37 @@ APP_MAP: dict[str, str] = {
     "terminal":   "start cmd",
     "explorer":   "explorer .",
     "paint":      "mspaint",
+}
+
+# --- Day 7: Developer App Shortcuts -----------------------------------------
+# Additional shortcuts used by automation_module.py
+APP_SHORTCUTS: dict[str, str] = {
+    "vscode":   "code .",
+    "chrome":   "start chrome",
+    "firefox":  "start firefox",
+    "postman":  "start Postman",
+    "cmd":      "start cmd",
+    "terminal": "wt",          # Windows Terminal
+    "notepad":  "notepad",
+    "explorer": "explorer .",
+}
+
+# --- Day 7: Project Map -----------------------------------------------------
+# Short name -> absolute path to the project root.
+# Edit this with your own projects!
+PROJECT_MAP: dict[str, str] = {
+    "jarvis": os.path.join(_BASE),               # this project
+    # "flask":  r"C:\Users\pandu\projects\flask_app",
+    # "react":  r"C:\Users\pandu\projects\react_app",
+}
+
+# --- Day 7: GitHub ----------------------------------------------------------
+# Your GitHub profile URL
+GITHUB_PROFILE = "https://github.com/SaiDeekshith2504"
+
+# Short name -> full repo URL (used by 'open github <name>')
+GITHUB_REPOS: dict[str, str] = {
+    "jarvis": "https://github.com/SaiDeekshith2504/Jarvis",
 }
 
 # ─── Daily Routine ───────────────────────────────────────────────────────────
@@ -91,7 +125,7 @@ NIGHT_MESSAGES: list[str] = [
 # "web"  → Flask web UI (run web_ui.py)
 UI_MODE = "cli"
 
-# ─── AI Integration (Optional) ───────────────────────────────────────────────
+# --- AI Integration (Optional) ----------------------------------------------
 # Set your API key here OR create a .env file with the key (recommended).
 # Jarvis will load .env automatically if python-dotenv is installed.
 #
@@ -104,6 +138,16 @@ AI_MODEL = ""             # e.g. "gemini-1.5-pro" or "gpt-4o"
 
 GEMINI_API_KEY  = os.getenv("GEMINI_API_KEY",  "")
 OPENAI_API_KEY  = os.getenv("OPENAI_API_KEY",  "")
+
+# --- Day 7: Weather ---------------------------------------------------------
+# Free API key from https://openweathermap.org/api
+# Add to .env: OPENWEATHER_API_KEY=your_key_here
+OPENWEATHER_API_KEY = os.getenv("OPENWEATHER_API_KEY", "")
+WEATHER_CITY        = "Hyderabad"   # Default city for weather lookups
+
+# --- Day 7: Morning Briefing ------------------------------------------------
+# Auto-run the morning briefing when Jarvis starts?
+AUTO_MORNING_BRIEFING = True
 
 # ─── Shell Command Safety (Day 5) ────────────────────────────────────────────
 # Commands that start with any of these tokens are blocked by 'run <cmd>'.

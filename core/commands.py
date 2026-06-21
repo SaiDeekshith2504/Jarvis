@@ -17,6 +17,8 @@ Day 5: ask (upgraded to ai.py), chat mode,
        my profile, ai status, run <shell command>  (+ Day 1-4 preserved)
 Day 6: open url/google/youtube/github/maps/wikipedia/reddit (browser automation),
        show history, clear history, tips           (+ Day 1-5 preserved)
+Day 7: weather, calendar, morning briefing, desktop notifications,
+       VS Code / GitHub / Flask automation, command stats  (+ Day 1-6 preserved)
 """
 
 from __future__ import annotations
@@ -38,6 +40,19 @@ from core import ai as ai_engine
 from core import user_profile as profile_engine
 from core import browser as browser_engine
 from core import logger as log_engine
+
+# Day 7 modules (graceful if not yet installed)
+try:
+    from modules import weather_module
+    from modules import calendar_module
+    from modules import notification_module
+    from modules import automation_module
+    from modules import logger_module as cmd_logger
+    from modules import morning_briefing as briefing_module
+    _DAY7_OK = True
+except Exception as _day7_err:
+    _DAY7_OK = False
+    _day7_err_msg = str(_day7_err)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -782,15 +797,121 @@ def cmd_clear_history_cmd(_args: str) -> str:
 
 def cmd_tips(_args: str) -> str:
     """Shows helpful tips for using Jarvis. Usage: tips"""
-    lines = ["── 💡  Jarvis Tips ─────────────────────────────────────"]
+    lines = ["-- Jarvis Tips -----------------------------------------------"]
     for i, tip in enumerate(TIPS, 1):
         lines.append(f"  [{i}]  {tip}")
-    lines.append("────────────────────────────────────────────────────────")
+    lines.append("--------------------------------------------------------------")
     lines.append("  More commands: type 'help' for the full list.")
     return "\n".join(lines)
 
 
+# ===============================================================================
+#  DAY 7 -- NEW COMMANDS
+# ===============================================================================
+
+def _day7_guard() -> str | None:
+    """Returns an error string if Day 7 modules failed to load, else None."""
+    if not _DAY7_OK:
+        return f"Day 7 modules not loaded: {_day7_err_msg}\n  Run: pip install requests win10toast-reborn"
+    return None
+
+
+# -- Weather -------------------------------------------------------------------
+
+def cmd_weather(args: str) -> str:
+    """
+    Shows live weather for a city (default: WEATHER_CITY in config.py).
+    Usage: weather            -> weather for default city
+           weather London     -> weather for London
+    """
+    if (err := _day7_guard()): return err
+    data = weather_module.get_weather(args.strip())
+    return weather_module.format_weather(data)
+
+
+# -- Calendar ------------------------------------------------------------------
+
+def cmd_calendar(_args: str) -> str:
+    """Shows today's Google Calendar events. Usage: calendar"""
+    if (err := _day7_guard()): return err
+    events, err = calendar_module.get_todays_events()
+    if err:
+        return err
+    return calendar_module.format_events(events)
+
+
+# -- Morning Briefing ----------------------------------------------------------
+
+def cmd_briefing(_args: str) -> str:
+    """
+    Generates the full morning briefing (weather + calendar + todos + motivation).
+    Usage: briefing   |   morning briefing
+    """
+    if (err := _day7_guard()): return err
+    return briefing_module.generate_briefing()
+
+
+# -- Notification test ---------------------------------------------------------
+
+def cmd_notify(args: str) -> str:
+    """
+    Sends a test desktop notification.
+    Usage: notify <message>
+    """
+    if (err := _day7_guard()): return err
+    msg = args.strip() or "Jarvis notification test!"
+    notification_module.notify("Jarvis", msg)
+    return f"Notification sent: {msg}"
+
+
+# -- VS Code / Developer Automation -------------------------------------------
+
+def cmd_open_vscode(args: str) -> str:
+    """Opens VS Code. Usage: open vscode [path]"""
+    if (err := _day7_guard()): return err
+    return automation_module.open_vscode(args)
+
+
+def cmd_open_project(args: str) -> str:
+    """Opens a known project in VS Code. Usage: open project <name>"""
+    if (err := _day7_guard()): return err
+    return automation_module.open_project(args)
+
+
+def cmd_open_flask(args: str) -> str:
+    """Starts the Flask dev server. Usage: run flask [path/to/app.py]"""
+    if (err := _day7_guard()): return err
+    return automation_module.run_flask_app(args)
+
+
+def cmd_open_terminal_cmd(args: str) -> str:
+    """Opens Windows Terminal or CMD. Usage: open terminal [path]"""
+    if (err := _day7_guard()): return err
+    return automation_module.open_terminal(args)
+
+
+def cmd_kill_process(args: str) -> str:
+    """Kills a running process. Usage: kill <process name>"""
+    if (err := _day7_guard()): return err
+    return automation_module.kill_process(args)
+
+
+# -- Command Analytics ---------------------------------------------------------
+
+def cmd_stats(_args: str) -> str:
+    """Shows command usage analytics. Usage: stats"""
+    if (err := _day7_guard()): return err
+    return cmd_logger.format_stats()
+
+
+def cmd_clear_cmd_logs(_args: str) -> str:
+    """Clears the structured command log. Usage: clear cmdlogs"""
+    if (err := _day7_guard()): return err
+    return cmd_logger.clear_logs()
+
+
 # ─── Context-aware responses ─────────────────────────────────────────────────
+
 
 def _handle_busy(user_input: str) -> str | None:
     """
@@ -909,6 +1030,7 @@ def cmd_run(args: str) -> str:
     """
     Runs a simple shell command and returns its stdout/stderr output.
     Usage: run echo hello  |  run dir  |  run python --version
+           run flask [path]  -> starts Flask dev server (Day 7)
 
     Safety: commands starting with a blocked token are refused.
     Edit BLOCKED_COMMANDS in config.py to adjust the list.
@@ -916,6 +1038,13 @@ def cmd_run(args: str) -> str:
     cmd = args.strip()
     if not cmd:
         return "What should I run? Usage: run <shell command>  (e.g. run echo hello)"
+
+    # Day 7: intercept 'run flask'
+    if cmd.lower().startswith("flask"):
+        flask_args = cmd[5:].strip()
+        if _DAY7_OK:
+            return automation_module.run_flask_app(flask_args)
+        return "Day 7 modules not loaded. Run: pip install requests"
 
     # Safety check: reject blocked command prefixes
     cmd_lower = cmd.lower()
@@ -1048,12 +1177,12 @@ def cmd_help(_args: str) -> str:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def _dispatch_open(args: str) -> str:
-    """Routes 'open file|url|google|youtube|github|maps|wikipedia|reddit …' → specialist,
-    else → cmd_open (app launcher)."""
+    """Routes 'open <sub> ...' to the correct specialist handler."""
     parts = args.strip().split(maxsplit=1)
     sub   = parts[0].lower() if parts else ""
     rest  = parts[1] if len(parts) > 1 else ""
 
+    # -- Day 6 browser targets ------------------------------------------------
     if sub == "file":      return cmd_open_file(rest)
     if sub == "url":       return cmd_open_url(rest)
     if sub == "google":    return cmd_open_google(rest)
@@ -1062,7 +1191,14 @@ def _dispatch_open(args: str) -> str:
     if sub == "maps":      return cmd_open_maps(rest)
     if sub == "wikipedia": return cmd_open_wikipedia(rest)
     if sub == "reddit":    return cmd_open_reddit(rest)
+
+    # -- Day 7 developer targets ----------------------------------------------
+    if sub in ("vscode", "vs", "code"): return cmd_open_vscode(rest)
+    if sub == "project":               return cmd_open_project(rest)
+    if sub in ("terminal", "cmd"):     return cmd_open_terminal_cmd(rest)
+
     return cmd_open(args)
+
 
 
 def _dispatch_create(args: str) -> str:
@@ -1266,7 +1402,7 @@ COMMAND_MAP: dict[str, callable] = {
 
     # -- Day 5 ----------------------------------------------------------------
     "chat":      cmd_chat,
-    "run":       cmd_run,
+    "run":       cmd_run,         # shell run (Day 5) — 'run flask' handled in _dispatch_run below
     "set":       _dispatch_set,
     "get":       _dispatch_get,
     "my":        _dispatch_my,
@@ -1278,7 +1414,15 @@ COMMAND_MAP: dict[str, callable] = {
     "show":      _dispatch_show,
     "history":   cmd_show_history,
 
-    # -- Unified dispatchers (updated for Day 6) ------------------------------
+    # -- Day 7 ----------------------------------------------------------------
+    "weather":   cmd_weather,
+    "calendar":  cmd_calendar,
+    "briefing":  cmd_briefing,
+    "notify":    cmd_notify,
+    "kill":      cmd_kill_process,
+    "stats":     cmd_stats,
+
+    # -- Unified dispatchers (updated for Day 7) ------------------------------
     "list":    _dispatch_list,
     "clear":   _dispatch_clear,
     "check":   _dispatch_check,

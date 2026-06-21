@@ -1,0 +1,11 @@
+[
+  {
+    "timestamp": "2026-06-21 13:06:34",
+    "command": "test",
+    "full_input": "smoke test",
+    "response": "ok",
+    "status": "success",
+    "source": "text",
+    "duration_ms": 1
+  }
+]

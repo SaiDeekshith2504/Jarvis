@@ -10,6 +10,7 @@ Day 4: Adds background reminder check on every loop iteration;
        cleaner goodbye message; stop/exit aliases.
 Day 5: Loads user profile on startup; greets by stored name;
        goodbye mentions the user by name.
+Day 7: Auto morning briefing on startup (if AUTO_MORNING_BRIEFING=True in config).
 """
 
 from __future__ import annotations
@@ -22,6 +23,13 @@ from core.commands  import handle_command
 from core.utils     import display_banner, get_input, startup_capabilities
 from core           import reminders as rem_engine
 from core           import user_profile as profile_engine
+
+# Day 7 morning briefing (graceful if modules not installed yet)
+try:
+    from modules.morning_briefing import run_morning_briefing
+    _BRIEFING_OK = True
+except Exception:
+    _BRIEFING_OK = False
 
 # ── Import voice module (graceful if unavailable) ────────────────────────────
 try:
@@ -94,6 +102,14 @@ def run_jarvis() -> None:
     greet_user(speak_fn=speak_fn)
     startup_capabilities()
     _startup_hints(voice_mode)
+
+    # Day 7: Auto morning briefing
+    if _BRIEFING_OK and getattr(config, "AUTO_MORNING_BRIEFING", True):
+        print("\n  [Jarvis] Generating morning briefing...\n")
+        try:
+            run_morning_briefing(speak_fn=speak_fn, source="startup")
+        except Exception as _be:
+            print(f"  [Jarvis] Morning briefing skipped: {_be}")
 
     # Check for any overdue reminders right on startup
     _check_and_notify_reminders(speak_fn)

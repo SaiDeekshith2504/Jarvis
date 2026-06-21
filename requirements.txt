@@ -1,33 +1,45 @@
 # Jarvis Dependencies
 # Install with: pip install -r requirements.txt
 
-# -- Day 2 (voice + utilities) -------------------------------------------------
+# ── Day 2 (voice + utilities) ─────────────────────────────────────────────────
 pyttsx3            # offline text-to-speech (no internet needed)
 SpeechRecognition  # voice input via microphone
-pyaudio            # microphone driver (required by SpeechRecognition)
+pyaudio            # microphone driver required by SpeechRecognition
                    # Windows: pip install pyaudio
                    # If pyaudio fails: pip install pipwin && pipwin install pyaudio
 
-# -- Day 3 (automation + utilities) -------------------------------------------
+# ── Day 3 (automation + utilities) ────────────────────────────────────────────
 psutil             # CPU / RAM / disk stats (sysinfo command)
-requests           # HTTP calls (future: REST APIs)
+requests           # HTTP calls — also used by Day 7 weather module
 python-dotenv      # load API keys from .env file
 
-# -- Day 4 (scheduling + reminders) -------------------------------------------
-# No new external dependencies -- uses only Python standard library
-# (datetime, json, os, re) for the reminder engine.
+# ── Day 4 (scheduling + reminders) ────────────────────────────────────────────
+# No new external dependencies -- uses only Python standard library.
 
-# -- Day 5 (AI + personalization) ---------------------------------------------
-# No mandatory new packages.  Install whichever AI provider you use:
+# ── Day 5 (AI + personalization) ──────────────────────────────────────────────
+# Install whichever AI provider you use:
 # google-generativeai   # Gemini API  ->  pip install google-generativeai
 # openai                # OpenAI API  ->  pip install openai
 #
 # If neither is installed, Jarvis falls back to the built-in rule-based AI.
 
-# -- Day 6 (GUI + browser + logging) ------------------------------------------
-# tkinter is built into Python (no pip needed — already included in Python 3.x)
-# webbrowser is part of the Python standard library (no install needed)
-# No new mandatory packages for Day 6.
-#
-# Optional: install pyinstaller to bundle Jarvis as a standalone .exe:
-# pyinstaller          ->  pip install pyinstaller
+# ── Day 6 (GUI + browser + logging) ───────────────────────────────────────────
+# tkinter    -- built into Python (no pip needed)
+# webbrowser -- Python standard library (no install needed)
+
+# ── Day 7 (weather + calendar + notifications + automation) ───────────────────
+
+# Live weather (OpenWeatherMap free API)
+requests           # already listed above -- used here too
+
+# Google Calendar integration
+google-api-python-client   # Google API client library
+google-auth-httplib2       # HTTP transport for Google auth
+google-auth-oauthlib       # OAuth 2.0 flow for installed apps
+
+# Desktop notifications (Windows toast -- requires Windows 10/11)
+win10toast-reborn          # Lightweight Windows toast notifications
+                           # Fallback: prints a terminal banner if unavailable
+
+# ── Quick install command for Day 7 ───────────────────────────────────────────
+# pip install requests python-dotenv google-api-python-client google-auth-httplib2 google-auth-oauthlib win10toast-reborn
